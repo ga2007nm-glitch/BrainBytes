@@ -1,5 +1,5 @@
 
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function Arena() {
   const location = useLocation();
@@ -62,6 +62,10 @@ export default function Arena() {
         >
           Start Learning 🎯
         </button>
+        <div className="arena-actions">
+          <Link className="secondary-btn" to="/avatar">🎨 Create your avatar</Link>
+          <Link className="primary-btn" to="/battle">⚔️ 1v1 Battle</Link>
+        </div>
       </div>
     </div>
   );
