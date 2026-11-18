@@ -12,11 +12,11 @@ const GRADE_OPTIONS = [
   { grade: 11, label: "Class 11-12+", sub: "Calculus, Logic & Big-O" }
 ];
 
-export default function Login({ onLoginComplete }) {
+export default function Login({ onLoginComplete, initialProfile }) {
   const navigate = useNavigate();
-  const [selectedAvatarId, setSelectedAvatarId] = useState("nova");
-  const [name, setName] = useState("Nova");
-  const [selectedGrade, setSelectedGrade] = useState(7);
+  const [selectedAvatarId, setSelectedAvatarId] = useState(initialProfile?.portraitId || "nova");
+  const [name, setName] = useState(initialProfile?.name || "Nova");
+  const [selectedGrade, setSelectedGrade] = useState(initialProfile?.grade || 7);
   const [error, setError] = useState("");
 
   const activePreset = AVATAR_PRESETS.find(p => p.id === selectedAvatarId) || AVATAR_PRESETS[0];
@@ -42,6 +42,7 @@ export default function Login({ onLoginComplete }) {
     try {
       const newProfile = {
         ...DEFAULT_AVATAR,
+        ...initialProfile,
         name: name.trim(),
         portraitId: selectedAvatarId,
         grade: selectedGrade

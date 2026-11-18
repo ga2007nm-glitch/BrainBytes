@@ -529,6 +529,19 @@ export class OnlineMatchManager {
     return match;
   }
 
+  getAnalyticsData() {
+    const matches = [...this.matches.values()];
+    return {
+      completedBattles: matches.filter(match => match.status === "finished").length,
+      attempts: matches.flatMap(match =>
+        match.history.flatMap(result => [
+          { grade: result.grade, subject: result.subject, correct: result.player1Correct },
+          { grade: result.grade, subject: result.subject, correct: result.player2Correct }
+        ])
+      )
+    };
+  }
+
   private getPlayerNumber(match: OnlineMatch, playerId: string): OnlinePlayerNumber {
     if (match.players[0].id === playerId) return 1;
     if (match.players[1]?.id === playerId) return 2;

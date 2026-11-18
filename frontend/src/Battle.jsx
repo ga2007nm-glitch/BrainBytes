@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import ThreeArena from "./ThreeArena";
 import useFighterModels from "./useFighterModels";
 import BrainBytesLogo from "./components/BrainBytesLogo";
@@ -33,10 +33,18 @@ const GRADE_COHORTS = [
 ];
 
 export default function Battle() {
+  const location = useLocation();
   const [saved] = useState(loadSavedAvatar);
   const [player] = useState(saved.avatar);
   const [opponent, setOpponent] = useState(() => generateOpponent(saved.avatar.name));
-  const [selectedGrade, setSelectedGrade] = useState(7);
+  const requestedGrade = location.state?.grade;
+  const savedGrade = saved.avatar.grade;
+  const initialGrade = GRADE_COHORTS.some(cohort => cohort.grade === requestedGrade)
+    ? requestedGrade
+    : GRADE_COHORTS.some(cohort => cohort.grade === savedGrade)
+      ? savedGrade
+      : 7;
+  const [selectedGrade, setSelectedGrade] = useState(initialGrade);
   const [miniGameMode, setMiniGameMode] = useState("mixed-arcade");
   const [gameMode, setGameMode] = useState("quick-online"); // "quick-online" | "invite-online" | "local" | "bot"
   const [onlineAction, setOnlineAction] = useState("create");

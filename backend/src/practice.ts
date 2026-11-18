@@ -200,6 +200,20 @@ export class PracticeManager {
     return this.publicBattle(battle);
   }
 
+  getAnalyticsData() {
+    const battles = [...this.battles.values()];
+    return {
+      completedBattles: battles.filter(battle => battle.status === "finished").length,
+      attempts: battles.flatMap(battle =>
+        battle.history.map(result => ({
+          grade: result.grade,
+          subject: result.subject,
+          correct: result.playerCorrect
+        }))
+      )
+    };
+  }
+
   private publicBattle(battle: PracticeBattle) {
     const isFinished = battle.status === "finished";
     const rawQuestion = !isFinished && battle.questionIndex < battle.questions.length

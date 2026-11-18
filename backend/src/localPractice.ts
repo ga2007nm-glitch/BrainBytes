@@ -221,6 +221,26 @@ export class LocalPracticeManager {
     return this.publicBattle(battle);
   }
 
+  getAnalyticsData() {
+    const battles = [...this.battles.values()];
+    const attempts = [];
+
+    for (const battle of battles) {
+      for (const result of battle.history) {
+        const grade = battle.questions[result.questionNumber - 1]?.grade ?? 7;
+        attempts.push(
+          { grade, subject: result.subject, correct: result.player1Correct },
+          { grade, subject: result.subject, correct: result.player2Correct }
+        );
+      }
+    }
+
+    return {
+      completedBattles: battles.filter(battle => battle.status === "finished").length,
+      attempts
+    };
+  }
+
   private findBattle(id: string, ownerId: string) {
     const battle = this.battles.get(id);
     if (!battle) throw new Error("Not found");

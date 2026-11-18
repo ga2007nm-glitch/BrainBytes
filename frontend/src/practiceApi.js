@@ -161,6 +161,28 @@ export function submitOnlineAnswer(matchId, questionId, answer, powerUp) {
   );
 }
 
-export function getClassroomAnalytics() {
-  return authenticatedRequest("/analytics/classroom", "GET");
+export async function getClassroomAnalytics() {
+  const data = await authenticatedRequest("/analytics/classroom", "GET");
+  const validPayload = data
+    && typeof data.totalCompletedBattles === "number"
+    && typeof data.totalAnswerAttempts === "number"
+    && (typeof data.overallAccuracyPercent === "number" || data.overallAccuracyPercent === null)
+    && Array.isArray(data.gradeBreakdowns)
+    && data.gradeBreakdowns.every(cohort =>
+      typeof cohort.grade === "number"
+      && typeof cohort.label === "string"
+      && typeof cohort.attempts === "number"
+      && (typeof cohort.accuracyPercent === "number" || cohort.accuracyPercent === null)
+      && Array.isArray(cohort.subjectBreakdowns)
+      && cohort.subjectBreakdowns.every(subject =>
+        typeof subject.subject === "string"
+        && typeof subject.attempts === "number"
+        && (typeof subject.accuracyPercent === "number" || subject.accuracyPercent === null)
+      )
+    );
+
+  if (!validPayload) {
+    throw new Error("The backend analytics API is outdated. Restart the backend and try again.");
+  }
+  return data;
 }

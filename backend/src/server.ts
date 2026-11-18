@@ -8,6 +8,7 @@ import { LocalPracticeManager } from "./localPractice.js";
 import { OnlineMatchManager } from "./onlineMatch.js";
 import { PracticeManager } from "./practice.js";
 import { getPublicQuestion } from "./validator.js";
+import { buildLearningAnalytics } from "./analytics.js";
 
 const queue = new MatchmakingQueue();
 const games = new GameManager();
@@ -181,23 +182,11 @@ const server = http.createServer(async (req, res) => {
     const playerId = authenticatedPlayer(req);
 
     if (req.method === "GET" && path === "/analytics/classroom") {
-      return send(res, 200, {
-        totalMatchesPlayed: 184,
-        averageDuelDuration: "1m 42s",
-        activeStudentsOnline: 24,
-        gradeBreakdowns: [
-          { grade: 7, label: "Class 7", avgAccuracy: "74%", avgSpeed: "3.8s", weakestTopic: "Linear Equations (58% accuracy)", strongestTopic: "BODMAS & Integers (91% accuracy)" },
-          { grade: 8, label: "Class 8", avgAccuracy: "71%", avgSpeed: "4.1s", weakestTopic: "Compound Interest (52% accuracy)", strongestTopic: "Square Roots (88% accuracy)" },
-          { grade: 9, label: "Class 9", avgAccuracy: "68%", avgSpeed: "4.5s", weakestTopic: "Newton's Second Law & Friction (55% accuracy)", strongestTopic: "Cartesian Plane (89% accuracy)" },
-          { grade: 10, label: "Class 10", avgAccuracy: "65%", avgSpeed: "4.9s", weakestTopic: "Trigonometric Identities (49% accuracy)", strongestTopic: "HCF & LCM (86% accuracy)" },
-          { grade: 11, label: "Class 11-12 & Advanced", avgAccuracy: "62%", avgSpeed: "5.3s", weakestTopic: "Time Complexity O(log N) (46% accuracy)", strongestTopic: "Derivatives (82% accuracy)" }
-        ],
-        learningImpactMetrics: {
-          retentionGainVsWorksheets: "+42%",
-          commonMisconceptionIdentified: "Subtracting negative integers treated as subtraction instead of addition",
-          activeDailyDuels: 96
-        }
-      });
+      return send(res, 200, buildLearningAnalytics([
+        practiceGames.getAnalyticsData(),
+        localPracticeGames.getAnalyticsData(),
+        onlineMatches.getAnalyticsData()
+      ]));
     }
 
     if (req.method === "POST" && path === "/practice/start") {

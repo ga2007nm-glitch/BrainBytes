@@ -5,20 +5,14 @@ import useFighterModels from "./useFighterModels";
 import BrainBytesLogo from "./components/BrainBytesLogo";
 import Login from "./pages/Login";
 import { generateOpponent, getAvatarPreset, loadSavedAvatar } from "./avatarModel";
+import { MINI_GAME_MODES } from "./gameModes";
 
 const COHORTS = [
-  { grade: 7, label: "Class 7", topics: "Integers, Equations & Light", duelsActive: 14, icon: "∑" },
-  { grade: 8, label: "Class 8", topics: "Square Roots, Powers & Loops", duelsActive: 18, icon: "√" },
-  { grade: 9, label: "Class 9", topics: "Polynomials, Motion & Algorithms", duelsActive: 22, icon: "π" },
-  { grade: 10, label: "Class 10", topics: "Quadratics, Trig & Ohm's Law", duelsActive: 31, icon: "Ω" },
-  { grade: 11, label: "Class 11-12+", topics: "Calculus, Logic & Big-O", duelsActive: 25, icon: "∫" }
-];
-
-const ACHIEVEMENTS = [
-  { id: 1, title: "Speed Demon", desc: "Strike opponent in < 2.5s", xp: "+150 XP", icon: "⚡", unlocked: true },
-  { id: 2, title: "Quantum Shield Master", desc: "Block an incoming hit with Shield", xp: "+200 XP", icon: "🛡️", unlocked: true },
-  { id: 3, title: "Critical Overclock", desc: "Deal 1.8x damage in a duel", xp: "+250 XP", icon: "💥", unlocked: false },
-  { id: 4, title: "STEM Grandmaster", desc: "Complete all 5 levels without missing", xp: "+500 XP", icon: "👑", unlocked: false }
+  { grade: 7, label: "Class 7", topics: "Integers, Equations & Light", icon: "∑" },
+  { grade: 8, label: "Class 8", topics: "Square Roots, Powers & Loops", icon: "√" },
+  { grade: 9, label: "Class 9", topics: "Polynomials, Motion & Algorithms", icon: "π" },
+  { grade: 10, label: "Class 10", topics: "Quadratics, Trig & Ohm's Law", icon: "Ω" },
+  { grade: 11, label: "Class 11-12+", topics: "Calculus, Logic & Big-O", icon: "∫" }
 ];
 
 export default function Landing() {
@@ -26,7 +20,7 @@ export default function Landing() {
   const [saved, setSaved] = useState(loadSavedAvatar);
   const [showLoginModal, setShowLoginModal] = useState(!saved.isSaved);
   const [rival] = useState(() => generateOpponent(saved.avatar.name));
-  const [activeGrade, setActiveGrade] = useState(7);
+  const activeGrade = Number(saved.avatar.grade) || 7;
   const { models } = useFighterModels();
   const player = saved.avatar;
   const playerPortrait = getAvatarPreset(player.portraitId);
@@ -35,6 +29,7 @@ export default function Landing() {
   if (showLoginModal || !saved.isSaved) {
     return (
       <Login
+        initialProfile={saved.isSaved ? saved.avatar : undefined}
         onLoginComplete={(newProfile) => {
           setSaved({ avatar: newProfile, isSaved: true, error: "" });
           setShowLoginModal(false);
@@ -76,18 +71,7 @@ export default function Landing() {
           </nav>
         </div>
 
-        {/* PLAYER STATUS & GAMIFIED STATS */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255, 209, 102, 0.12)", border: "1px solid rgba(255, 209, 102, 0.3)", padding: "6px 14px", borderRadius: "20px" }}>
-            <span style={{ color: "#FFD166" }}>⚡</span>
-            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#FFD166" }}>1,450 XP</span>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255, 94, 126, 0.12)", border: "1px solid rgba(255, 94, 126, 0.3)", padding: "6px 14px", borderRadius: "20px" }}>
-            <span>🔥</span>
-            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#FF5E7E" }}>5 Day Streak</span>
-          </div>
-
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Link to="/avatar" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", background: "rgba(255,255,255,0.04)", padding: "4px 12px 4px 6px", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.1)" }}>
               <img src={playerPortrait.src} alt={player.name} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", border: "1.5px solid #00F2FE" }} />
@@ -150,7 +134,7 @@ export default function Landing() {
             <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", alignItems: "center" }}>
               <button
                 type="button"
-                onClick={() => navigate("/battle")}
+                onClick={() => navigate("/battle", { state: { grade: activeGrade } })}
                 style={{
                   background: "linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)",
                   color: "#080C16",
@@ -214,23 +198,22 @@ export default function Landing() {
               </span>
               <h2 style={{ fontSize: "1.6rem", margin: "4px 0 0 0" }}>Choose Your Grade to Duel</h2>
             </div>
-            <span style={{ color: "#70E000", fontWeight: 700, fontSize: "0.9rem" }}>● 110+ Students Online</span>
+            <span style={{ color: "#9CA3AF", fontSize: "0.9rem" }}>Choose a cohort for curriculum-matched rounds.</span>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
             {COHORTS.map(cohort => (
-              <div
+              <Link
                 key={cohort.grade}
-                onClick={() => {
-                  setActiveGrade(cohort.grade);
-                  navigate("/battle");
-                }}
+                to="/battle"
+                state={{ grade: cohort.grade }}
+                aria-label={`Start a ${cohort.label} battle`}
                 style={{
+                  display: "block",
                   background: activeGrade === cohort.grade ? "rgba(0, 242, 254, 0.1)" : "rgba(14, 18, 33, 0.8)",
                   border: activeGrade === cohort.grade ? "2px solid #00F2FE" : "1px solid rgba(255,255,255,0.08)",
                   borderRadius: "14px",
                   padding: "20px",
-                  cursor: "pointer",
                   transition: "all 0.2s ease",
                   boxShadow: activeGrade === cohort.grade ? "0 0 20px rgba(0, 242, 254, 0.2)" : "none"
                 }}
@@ -238,89 +221,47 @@ export default function Landing() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                   <span style={{ fontSize: "1.5rem", color: "#00F2FE", fontWeight: 900 }}>{cohort.icon}</span>
                   <span style={{ fontSize: "0.75rem", background: "rgba(0,242,254,0.15)", color: "#00F2FE", padding: "3px 8px", borderRadius: "10px", fontWeight: 700 }}>
-                    {cohort.duelsActive} active
+                    Grade {cohort.grade} topics
                   </span>
                 </div>
                 <h3 style={{ margin: "0 0 6px 0", fontSize: "1.2rem", color: "#FFFFFF" }}>{cohort.label}</h3>
                 <p style={{ margin: "0 0 14px 0", color: "#9CA3AF", fontSize: "0.85rem", lineHeight: 1.4 }}>{cohort.topics}</p>
                 <span style={{ color: "#00F2FE", fontSize: "0.85rem", fontWeight: 800 }}>Play 1v1 →</span>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
 
-        {/* SECTION: GAMIFIED QUESTS & ACHIEVEMENTS */}
-        <section style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "28px" }}>
-          {/* QUESTS */}
+        <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "28px" }}>
           <div style={{ background: "rgba(14, 18, 33, 0.8)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "24px" }}>
-            <h2 style={{ fontSize: "1.3rem", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
-              <span>🏆</span> Gamified Battle Quests
-            </h2>
-            <div style={{ display: "grid", gap: "12px" }}>
-              {ACHIEVEMENTS.map(ach => (
-                <div
-                  key={ach.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    background: "rgba(255,255,255,0.025)",
-                    padding: "14px 18px",
-                    borderRadius: "10px",
-                    border: ach.unlocked ? "1px solid rgba(112, 224, 0, 0.4)" : "1px solid rgba(255,255,255,0.06)"
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                    <span style={{ fontSize: "1.6rem" }}>{ach.icon}</span>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: "0.95rem", color: "#FFF" }}>{ach.title}</h4>
-                      <small style={{ color: "#9CA3AF" }}>{ach.desc}</small>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <span style={{ color: "#FFD166", fontWeight: 800, fontSize: "0.85rem" }}>{ach.xp}</span>
-                    <small style={{ display: "block", color: ach.unlocked ? "#70E000" : "#6B7280", fontWeight: 700 }}>
-                      {ach.unlocked ? "UNLOCKED" : "LOCKED"}
-                    </small>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h2 style={{ fontSize: "1.3rem", margin: "0 0 12px" }}>How a battle works</h2>
+            <ol style={{ display: "grid", gap: "12px", paddingLeft: "22px", color: "#D1D5DB", lineHeight: 1.6 }}>
+              <li>Choose your class to select grade-aligned questions.</li>
+              <li>Pick a battle mode and play five progressively leveled rounds.</li>
+              <li>Review the answer and worked explanation after each round.</li>
+              <li>Use an invite code to play with someone on another device.</li>
+            </ol>
+            <Link to="/battle" className="dashboard-primary-btn" style={{ display: "inline-block", marginTop: "8px", padding: "10px 16px" }}>
+              Explore the battle modes →
+            </Link>
           </div>
 
-          {/* REAL-TIME LEADERBOARD */}
           <div style={{ background: "rgba(14, 18, 33, 0.8)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "24px" }}>
-            <h2 style={{ fontSize: "1.3rem", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
-              <span>⚡</span> Arena Duelist Leaderboard
-            </h2>
+            <h2 style={{ fontSize: "1.3rem", margin: "0 0 12px" }}>Available game modes</h2>
             <div style={{ display: "grid", gap: "10px" }}>
-              {[
-                { rank: "1", name: "Aryan_Class10", score: "2,420 PTS", winStreak: "7 Streak 🔥", color: "#FFD166" },
-                { rank: "2", name: "Aarav_7th", score: "2,150 PTS", winStreak: "5 Streak 🔥", color: "#C0C0C0" },
-                { rank: "3", name: "Zoya_Advanced", score: "1,980 PTS", winStreak: "4 Streak 🔥", color: "#CD7F32" },
-                { rank: "4", name: player.name + " (You)", score: "1,450 PTS", winStreak: "3 Streak 🔥", color: "#00F2FE" }
-              ].map(item => (
-                <div
-                  key={item.rank}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 14px",
-                    background: item.name.includes("You") ? "rgba(0,242,254,0.1)" : "rgba(255,255,255,0.02)",
-                    borderRadius: "8px",
-                    border: item.name.includes("You") ? "1px solid #00F2FE" : "1px solid transparent"
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontWeight: 900, color: item.color, width: "16px" }}>#{item.rank}</span>
-                    <strong style={{ fontSize: "0.9rem" }}>{item.name}</strong>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#FFF" }}>{item.score}</span>
-                    <small style={{ display: "block", color: "#FF5E7E", fontSize: "0.72rem" }}>{item.winStreak}</small>
-                  </div>
-                </div>
+              {MINI_GAME_MODES.map(mode => (
+                <article key={mode.id} style={{ padding: "10px 12px", borderRadius: "9px", background: "rgba(255,255,255,0.025)" }}>
+                  <h3 style={{ margin: "0 0 4px", color: "#9CEEFF", fontSize: "0.95rem" }}>{mode.name}</h3>
+                  <p style={{ margin: 0, color: "#B7BAD3", fontSize: "0.82rem", lineHeight: 1.5 }}>
+                    {mode.id === "memory-logic"
+                      ? "Watch a signal sequence, then replay it from memory."
+                      : mode.id === "mixed-arcade"
+                        ? "Rotate through the available game themes across the five levels."
+                        : mode.id === "code-runner"
+                          ? "Answer curriculum questions through a runner-themed gate interface."
+                          : "Answer curriculum questions through a tower-defense-themed interface."}
+                  </p>
+                </article>
               ))}
             </div>
           </div>
