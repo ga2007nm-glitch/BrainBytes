@@ -60,7 +60,7 @@ async function readBody(req: http.IncomingMessage): Promise<any> {
 
   for await (const chunk of req) {
     body += chunk.toString();
-    if (body.length > 10_000) throw new Error("Request too large");
+    if (body.length > 100_000) throw new Error("Request too large");
   }
 
   return body ? JSON.parse(body) : {};
@@ -191,7 +191,16 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && path === "/practice/start") {
       const body = await readBody(req);
-      return send(res, 201, practiceGames.startBattle(playerId, body.grade, body.gameMode));
+      return send(
+        res,
+        201,
+        practiceGames.startBattle(
+          playerId,
+          body.grade,
+          body.gameMode,
+          body.completedQuestionIds
+        )
+      );
     }
 
     const practiceAnswerMatch = path.match(/^\/practice\/([^/]+)\/answer$/);
@@ -224,7 +233,9 @@ const server = http.createServer(async (req, res) => {
           playerId,
           body.player1Name,
           body.player2Name,
-          body.gameMode
+          body.gameMode,
+          body.grade,
+          body.completedQuestionIds
         )
       );
     }
@@ -268,7 +279,14 @@ const server = http.createServer(async (req, res) => {
       return send(
         res,
         200,
-        onlineMatches.quickMatch(playerId, body.name, body.portraitId, body.grade, body.gameMode)
+        onlineMatches.quickMatch(
+          playerId,
+          body.name,
+          body.portraitId,
+          body.grade,
+          body.gameMode,
+          body.completedQuestionIds
+        )
       );
     }
 
@@ -277,7 +295,14 @@ const server = http.createServer(async (req, res) => {
       return send(
         res,
         201,
-        onlineMatches.create(playerId, body.name, body.portraitId, body.grade, body.gameMode)
+        onlineMatches.create(
+          playerId,
+          body.name,
+          body.portraitId,
+          body.grade,
+          body.gameMode,
+          body.completedQuestionIds
+        )
       );
     }
 
@@ -291,7 +316,8 @@ const server = http.createServer(async (req, res) => {
           body.inviteCode,
           body.name,
           body.portraitId,
-          body.grade
+          body.grade,
+          body.completedQuestionIds
         )
       );
     }
@@ -408,6 +434,7 @@ const server = http.createServer(async (req, res) => {
       message === "Question changed" ? 409 :
       message === "Wrong turn" ? 409 :
       message === "Both answers are required" ? 409 :
+      message.startsWith("No unused ") ? 409 :
       message === "Battle cannot continue" ? 409 :
       message === "Question time expired" ? 409 :
       message === "Battle not active" ? 409 : 400;

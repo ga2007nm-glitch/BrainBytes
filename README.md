@@ -6,15 +6,17 @@ BrainBytes is a STEM learning prototype that turns grade-level math, science, lo
 
 - Five progressively leveled rounds for supported cohorts (Classes 7–10 and 11–12+).
 - Practice against a bot, same-device two-player practice, and invite-code matches between devices connected to the same backend.
-- Four selectable modes: Mixed Arcade, Code Runner, Math Tower Defense, and Memory & Logic. Memory & Logic uses an actual sequence-recall interaction. Code Runner and Math Tower Defense currently present the curriculum question choices in themed game interfaces; they are not standalone platformer or tower-defense simulations.
+- Four selectable modes: Mixed Arcade rotates through math, coding, and logic questions; Code Runner selects coding questions; Math Tower Defense selects math questions; and Memory & Logic selects logic questions and uses an actual sequence-recall interaction. Code Runner and Math Tower Defense remain themed question interfaces, not standalone platformer or tower-defense simulations.
+- Completed question IDs are saved in the current browser and excluded from future matches across grades and game modes. Each grade/subject/difficulty currently has 20 generated variants, supporting about 20 matches per isolated mode/grade before exhaustion; playing Mixed Arcade also consumes questions from the subject-specific modes. The match-end review lists each completed challenge, its answer, and its explanation. If a grade/mode pool has no unused questions left, the game reports that instead of repeating one.
 - Selectable illustrated avatars and optional GLB/VRM fighter uploads. Avatar choices and uploaded models are stored in the current browser.
 - A teacher analytics page that aggregates observed answer attempts by grade and subject, with CSV export. The dashboard does not claim learning-retention gains.
 
 ## Important prototype limitations
 
-- Questions are selected from a curated question bank; question text is not procedurally generated. Review the content with a subject teacher before classroom use.
+- Questions come from curated prompts plus deterministic numeric, code, and logic variants; they are not AI-generated. Review the question templates and answers with a subject teacher before classroom use.
 - Matchmaking, sessions, and analytics are held in backend memory. They are lost when the backend restarts and are not shared across multiple backend instances.
 - The profile form collects a display name, grade, and avatar locally. It is not real authentication, and student records are not persisted to a database.
+- Completed-question history is local to one browser profile. It does not sync to another device or another browser profile, and clearing this browser's saved game data allows questions to be selected again.
 - Analytics describe activity observed since the current backend process started. They are not a controlled study or proof of learning impact.
 - Code Runner and Math Tower Defense are themed question rounds; only Memory & Logic currently has a distinct non-question-choice interaction.
 

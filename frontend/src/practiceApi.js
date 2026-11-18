@@ -83,8 +83,12 @@ async function authenticatedRequest(path, method = "GET", body) {
   }
 }
 
-export function startPracticeBattle(grade = 7, gameMode = "mixed-arcade") {
-  return authenticatedRequest("/practice/start", "POST", { grade, gameMode });
+export function startPracticeBattle(grade = 7, gameMode = "mixed-arcade", completedQuestionIds = []) {
+  return authenticatedRequest("/practice/start", "POST", {
+    grade,
+    gameMode,
+    completedQuestionIds
+  });
 }
 
 export function getPracticeBattle(battleId) {
@@ -99,11 +103,19 @@ export function submitPracticeAnswer(battleId, questionId, answer) {
   );
 }
 
-export function startLocalPracticeBattle(player1Name, player2Name, gameMode = "mixed-arcade") {
+export function startLocalPracticeBattle(
+  player1Name,
+  player2Name,
+  gameMode = "mixed-arcade",
+  grade = 7,
+  completedQuestionIds = []
+) {
   return authenticatedRequest("/local-practice/start", "POST", {
     player1Name,
     player2Name,
-    gameMode
+    gameMode,
+    grade,
+    completedQuestionIds
   });
 }
 
@@ -128,30 +140,45 @@ export function continueLocalPracticeBattle(battleId) {
   );
 }
 
-export function quickMatchOnline(name, portraitId, grade = 7, gameMode = "mixed-arcade") {
+export function quickMatchOnline(
+  name,
+  portraitId,
+  grade = 7,
+  gameMode = "mixed-arcade",
+  completedQuestionIds = []
+) {
   return authenticatedRequest("/online-matches/quick-match", "POST", {
     name,
     portraitId,
     grade,
-    gameMode
+    gameMode,
+    completedQuestionIds
   });
 }
 
-export function createOnlineMatch(name, portraitId, grade = 7, gameMode = "mixed-arcade") {
+export function createOnlineMatch(
+  name,
+  portraitId,
+  grade = 7,
+  gameMode = "mixed-arcade",
+  completedQuestionIds = []
+) {
   return authenticatedRequest("/online-matches/create", "POST", {
     name,
     portraitId,
     grade,
-    gameMode
+    gameMode,
+    completedQuestionIds
   });
 }
 
-export function joinOnlineMatch(inviteCode, name, portraitId, grade = 7) {
+export function joinOnlineMatch(inviteCode, name, portraitId, grade = 7, completedQuestionIds = []) {
   return authenticatedRequest("/online-matches/join", "POST", {
     inviteCode,
     name,
     portraitId,
-    grade
+    grade,
+    completedQuestionIds
   });
 }
 

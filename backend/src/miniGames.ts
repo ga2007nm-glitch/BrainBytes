@@ -73,7 +73,7 @@ export function validateMiniGameAnswer(
 
   return {
     correct,
-    explanation: `You reproduced ${expected.length} memory tiles. ${question.explanation}`,
+    explanation: `The signal had ${expected.length} tiles and must be replayed from left to right. Group nearby tiles into smaller chunks, rehearse each chunk once, then join the chunks in order to reduce memory errors.`,
     points: correct ? question.points : 0,
     damage: correct ? question.damage : 0
   };

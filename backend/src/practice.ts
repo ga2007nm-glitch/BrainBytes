@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   generateMatchQuestions,
   getPublicQuestion,
+  normalizeCompletedQuestionIds,
   Question,
 } from "./validator.js";
 import {
@@ -14,6 +15,8 @@ import {
 
 export type PracticeResult = {
   questionNumber: number;
+  questionId: string;
+  prompt: string;
   level: number;
   levelName: string;
   grade: number;
@@ -55,10 +58,16 @@ const botAccuracyByLevel = [0.4, 0.5, 0.55, 0.65, 0.7];
 export class PracticeManager {
   private battles = new Map<string, PracticeBattle>();
 
-  startBattle(playerId: string, gradeInput?: unknown, gameModeInput?: unknown) {
+  startBattle(
+    playerId: string,
+    gradeInput?: unknown,
+    gameModeInput?: unknown,
+    completedQuestionIdsInput?: unknown
+  ) {
     const grade = Number(gradeInput) || 7;
     const miniGameMode = normalizeMiniGameMode(gameModeInput);
-    const battleQuestions = generateMatchQuestions(grade);
+    const completedQuestionIds = normalizeCompletedQuestionIds(completedQuestionIdsInput);
+    const battleQuestions = generateMatchQuestions(grade, miniGameMode, completedQuestionIds);
     const battle: PracticeBattle = {
       id: randomUUID(),
       playerId,
@@ -158,6 +167,10 @@ export class PracticeManager {
 
     const roundResult: PracticeResult = {
       questionNumber: battle.questionIndex + 1,
+      questionId: currentQuestion.id,
+      prompt: activeMiniGame === "memory-logic"
+        ? "Memorize and replay the signal sequence shown for this round."
+        : currentQuestion.prompt,
       level: currentQuestion.level,
       levelName: currentQuestion.levelName,
       grade: battle.grade,

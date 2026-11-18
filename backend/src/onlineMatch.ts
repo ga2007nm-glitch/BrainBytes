@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import {
   generateMatchQuestions,
   getPublicQuestion,
+  normalizeCompletedQuestionIds,
   Question,
 } from "./validator.js";
 import {
@@ -36,6 +37,8 @@ export type OnlinePlayer = {
 
 export type OnlineRoundResult = {
   questionNumber: number;
+  questionId: string;
+  prompt: string;
   level: number;
   levelName: string;
   grade: number;
@@ -69,6 +72,7 @@ export type OnlineMatch = {
   miniGameMode: MiniGameMode;
   players: [OnlinePlayer, OnlinePlayer | null];
   questions: Question[];
+  completedQuestionIds: [string[], string[]];
   answers: [SubmittedAnswer | null, SubmittedAnswer | null];
   questionIndex: number;
   questionStartedAt: number;
@@ -109,9 +113,25 @@ const PEER_NAMES_BY_GRADE: Record<number, string[]> = {
 export class OnlineMatchManager {
   private matches = new Map<string, OnlineMatch>();
   private matchIdsByCode = new Map<string, string>();
-  private quickMatchQueue: { playerId: string; name: string; portraitId: AvatarPresetId; grade: number; miniGameMode: MiniGameMode; queuedAt: number }[] = [];
+  private quickMatchQueue: {
+    playerId: string;
+    matchId: string;
+    name: string;
+    portraitId: AvatarPresetId;
+    grade: number;
+    miniGameMode: MiniGameMode;
+    completedQuestionIds: string[];
+    queuedAt: number;
+  }[] = [];
 
-  create(playerId: string, name: unknown, portraitId: unknown, gradeInput?: unknown, gameModeInput?: unknown): ReturnType<OnlineMatchManager["publicMatch"]> {
+  create(
+    playerId: string,
+    name: unknown,
+    portraitId: unknown,
+    gradeInput?: unknown,
+    gameModeInput?: unknown,
+    completedQuestionIdsInput?: unknown
+  ): ReturnType<OnlineMatchManager["publicMatch"]> {
     let code = "";
     do {
       code = randomBytes(4).toString("hex").toUpperCase();
@@ -119,7 +139,8 @@ export class OnlineMatchManager {
 
     const grade = normalizeGrade(gradeInput);
     const miniGameMode = normalizeMiniGameMode(gameModeInput);
-    const matchQuestions = generateMatchQuestions(grade);
+    const completedQuestionIds = normalizeCompletedQuestionIds(completedQuestionIdsInput);
+    const matchQuestions = generateMatchQuestions(grade, miniGameMode, completedQuestionIds);
 
     const match: OnlineMatch = {
       id: randomUUID(),
@@ -142,6 +163,7 @@ export class OnlineMatchManager {
         null
       ],
       questions: matchQuestions,
+      completedQuestionIds: [completedQuestionIds, []],
       answers: [null, null],
       questionIndex: 0,
       questionStartedAt: Date.now(),
@@ -156,7 +178,14 @@ export class OnlineMatchManager {
     return this.publicMatch(match, 1);
   }
 
-  join(playerId: string, codeValue: unknown, name: unknown, portraitId: unknown, gradeInput?: unknown): ReturnType<OnlineMatchManager["publicMatch"]> {
+  join(
+    playerId: string,
+    codeValue: unknown,
+    name: unknown,
+    portraitId: unknown,
+    gradeInput?: unknown,
+    completedQuestionIdsInput?: unknown
+  ): ReturnType<OnlineMatchManager["publicMatch"]> {
     if (typeof codeValue !== "string") throw new Error("Not found");
     const code = codeValue.trim().toUpperCase();
 
@@ -169,6 +198,12 @@ export class OnlineMatchManager {
     if (match.players[0].id === playerId) throw new Error("Already joined");
 
     const grade = normalizeGrade(gradeInput || match.grade);
+    const completedQuestionIds = normalizeCompletedQuestionIds(completedQuestionIdsInput);
+    const matchQuestions = generateMatchQuestions(
+      match.grade,
+      match.miniGameMode,
+      [...match.completedQuestionIds[0], ...completedQuestionIds]
+    );
 
     match.players[1] = {
       id: playerId,
@@ -182,79 +217,82 @@ export class OnlineMatchManager {
       overclockActive: false,
       powerUpsAvailable: { shield: true, overclock: true, byteHack: true }
     };
+    match.questions = matchQuestions;
+    match.completedQuestionIds[1] = completedQuestionIds;
     match.status = "playing";
     match.questionStartedAt = Date.now();
     return this.publicMatch(match, 2);
   }
 
-  quickMatch(playerId: string, nameValue: unknown, portraitIdValue: unknown, gradeInput?: unknown, gameModeInput?: unknown) {
+  quickMatch(
+    playerId: string,
+    nameValue: unknown,
+    portraitIdValue: unknown,
+    gradeInput?: unknown,
+    gameModeInput?: unknown,
+    completedQuestionIdsInput?: unknown
+  ) {
     const name = validateName(nameValue);
     const portraitId = validateAvatar(portraitIdValue);
     const grade = normalizeGrade(gradeInput);
     const miniGameMode = normalizeMiniGameMode(gameModeInput);
+    const completedQuestionIds = normalizeCompletedQuestionIds(completedQuestionIdsInput);
 
     // Clean stale queue members (older than 20 seconds)
     const now = Date.now();
     this.quickMatchQueue = this.quickMatchQueue.filter(q => (now - q.queuedAt) < 20000 && q.playerId !== playerId);
 
     // Look for a peer in the exact same grade!
-    const opponentIndex = this.quickMatchQueue.findIndex(
+    let opponentIndex = this.quickMatchQueue.findIndex(
       q => q.grade === grade && q.miniGameMode === miniGameMode
     );
-    if (opponentIndex !== -1) {
-      const [opponent] = this.quickMatchQueue.splice(opponentIndex, 1);
-      const matchQuestions = generateMatchQuestions(grade);
-      const code = randomBytes(4).toString("hex").toUpperCase();
-
-      const match: OnlineMatch = {
-        id: randomUUID(),
-        code,
+    while (opponentIndex !== -1) {
+      const opponent = this.quickMatchQueue[opponentIndex];
+      const match = this.matches.get(opponent.matchId);
+      if (!match || match.status !== "waiting") {
+        this.quickMatchQueue.splice(opponentIndex, 1);
+        opponentIndex = this.quickMatchQueue.findIndex(
+          q => q.grade === grade && q.miniGameMode === miniGameMode
+        );
+        continue;
+      }
+      const matchQuestions = generateMatchQuestions(
         grade,
         miniGameMode,
-        players: [
-          {
-            id: opponent.playerId,
-            name: opponent.name,
-            portraitId: opponent.portraitId,
-            grade: opponent.grade,
-            score: 0,
-            hp: 100,
-            racePosition: 0,
-            shieldActive: false,
-            overclockActive: false,
-            powerUpsAvailable: { shield: true, overclock: true, byteHack: true }
-          },
-          {
-            id: playerId,
-            name,
-            portraitId,
-            grade,
-            score: 0,
-            hp: 100,
-            racePosition: 0,
-            shieldActive: false,
-            overclockActive: false,
-            powerUpsAvailable: { shield: true, overclock: true, byteHack: true }
-          }
-        ],
-        questions: matchQuestions,
-        answers: [null, null],
-        questionIndex: 0,
-        questionStartedAt: Date.now(),
-        status: "playing",
-        winner: null,
-        history: [],
-        lastResolvedResult: null
+        [...opponent.completedQuestionIds, ...completedQuestionIds]
+      );
+      this.quickMatchQueue.splice(opponentIndex, 1);
+      match.questions = matchQuestions;
+      match.completedQuestionIds = [opponent.completedQuestionIds, completedQuestionIds];
+      match.players[1] = {
+        id: playerId,
+        name,
+        portraitId,
+        grade,
+        score: 0,
+        hp: 100,
+        racePosition: 0,
+        shieldActive: false,
+        overclockActive: false,
+        powerUpsAvailable: { shield: true, overclock: true, byteHack: true }
       };
-
-      this.matches.set(match.id, match);
-      this.matchIdsByCode.set(code, match.id);
+      match.status = "playing";
+      match.questionStartedAt = Date.now();
       return this.publicMatch(match, 2);
     }
 
     // Otherwise, create a waiting match and queue this player under their grade
-    const created = this.create(playerId, name, portraitId, grade, miniGameMode);
-    this.quickMatchQueue.push({ playerId, name, portraitId, grade, miniGameMode, queuedAt: Date.now() });
+    const created = this.create(playerId, name, portraitId, grade, miniGameMode, completedQuestionIds);
+    this.quickMatchQueue.push({
+      playerId,
+      matchId: created.id,
+      name,
+      portraitId,
+      grade,
+      miniGameMode,
+      completedQuestionIds,
+      queuedAt: Date.now()
+    });
 
     // Schedule auto-pairing with a live simulated grade-peer if no human in this grade joins within 2.2 seconds
     const matchId = created.id;
@@ -478,6 +516,10 @@ export class OnlineMatchManager {
 
     const roundSummary: OnlineRoundResult = {
       questionNumber: match.questionIndex + 1,
+      questionId: currentQ.id,
+      prompt: activeMiniGame === "memory-logic"
+        ? "Memorize and replay the signal sequence shown for this round."
+        : currentQ.prompt,
       level: currentQ.level,
       levelName: currentQ.levelName,
       grade: match.grade,

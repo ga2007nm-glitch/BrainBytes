@@ -12,6 +12,10 @@ import {
   loadSavedAvatar
 } from "./avatarModel";
 import {
+  getCompletedQuestionIds,
+  markCompletedQuestionIds
+} from "./questionProgress";
+import {
   continueLocalPracticeBattle,
   createOnlineMatch,
   getOnlineMatch,
@@ -103,6 +107,18 @@ export default function Battle() {
     : gameMode === "bot"
       ? botFeedback
       : onlineFeedback;
+
+  useEffect(() => {
+    const completedQuestionIds = (battle?.history || [])
+      .map(result => result.questionId);
+    if (completedQuestionIds.length === 0) return;
+
+    try {
+      markCompletedQuestionIds(completedQuestionIds);
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : "Could not save completed questions.");
+    }
+  }, [battle?.history]);
 
   // Names
   const localPlayerOneName = localBattle?.players[0].name || playerOneName;
@@ -310,9 +326,17 @@ export default function Battle() {
     setEliminatedOptions([]);
 
     try {
+      const completedQuestionIds = getCompletedQuestionIds();
+
       if (gameMode === "quick-online") {
         setIsSearchingMatch(true);
-        const match = await quickMatchOnline(onlineName, player.portraitId, selectedGrade, miniGameMode);
+        const match = await quickMatchOnline(
+          onlineName,
+          player.portraitId,
+          selectedGrade,
+          miniGameMode,
+          completedQuestionIds
+        );
         setOnlineBattle(match);
         setLocalBattle(null);
         setBotBattle(null);
@@ -327,14 +351,26 @@ export default function Battle() {
         }
       } else if (gameMode === "invite-online") {
         if (onlineAction === "create") {
-          const newMatch = await createOnlineMatch(onlineName, player.portraitId, selectedGrade, miniGameMode);
+          const newMatch = await createOnlineMatch(
+            onlineName,
+            player.portraitId,
+            selectedGrade,
+            miniGameMode,
+            completedQuestionIds
+          );
           setOnlineBattle(newMatch);
           setLocalBattle(null);
           setBotBattle(null);
           setDismissedOnlineResult(0);
           setOnlineNotice("Share this Room Code with your classmate!");
         } else {
-          const newMatch = await joinOnlineMatch(inviteCodeInput, onlineName, player.portraitId, selectedGrade);
+          const newMatch = await joinOnlineMatch(
+            inviteCodeInput,
+            onlineName,
+            player.portraitId,
+            selectedGrade,
+            completedQuestionIds
+          );
           setOnlineBattle(newMatch);
           setLocalBattle(null);
           setBotBattle(null);
@@ -342,12 +378,22 @@ export default function Battle() {
           setOnlineNotice("Joined duel room!");
         }
       } else if (gameMode === "local") {
-        const newBattle = await startLocalPracticeBattle(playerOneName, playerTwoName, miniGameMode);
+        const newBattle = await startLocalPracticeBattle(
+          playerOneName,
+          playerTwoName,
+          miniGameMode,
+          selectedGrade,
+          completedQuestionIds
+        );
         setLocalBattle(newBattle);
         setBotBattle(null);
         setOnlineBattle(null);
       } else if (gameMode === "bot") {
-        const newBattle = await startPracticeBattle(selectedGrade, miniGameMode);
+        const newBattle = await startPracticeBattle(
+          selectedGrade,
+          miniGameMode,
+          completedQuestionIds
+        );
         setBotBattle(newBattle);
         setLocalBattle(null);
         setOnlineBattle(null);
@@ -1058,6 +1104,44 @@ export default function Battle() {
                 <small>{stageOpponentHp} HP Remaining</small>
               </div>
             </div>
+
+            <section
+              aria-labelledby="match-review-heading"
+              style={{ textAlign: "left", margin: "0 auto 24px", maxWidth: "820px" }}
+            >
+              <h3 id="match-review-heading" style={{ color: "#00F2FE", marginBottom: "8px" }}>
+                Match Review: Questions, Answers &amp; Explanations
+              </h3>
+              <p style={{ color: "#A0AEC0", lineHeight: 1.6 }}>
+                Revisit every completed round to see the challenge, correct answer, and reasoning.
+              </p>
+              <ol style={{ display: "grid", gap: "12px", paddingLeft: "24px" }}>
+                {battle.history.map(result => (
+                  <li
+                    key={result.questionId}
+                    style={{
+                      padding: "16px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(0,242,254,0.2)",
+                      borderRadius: "10px",
+                      color: "#D1D5DB",
+                      lineHeight: 1.6
+                    }}
+                  >
+                    <strong style={{ color: "#FFFFFF" }}>
+                      {result.levelName} · {result.subject.toUpperCase()}
+                    </strong>
+                    <p style={{ margin: "8px 0" }}>{result.prompt}</p>
+                    <p style={{ margin: "8px 0", color: "#FFD166" }}>
+                      Correct answer: {result.correctAnswer}
+                    </p>
+                    <p style={{ margin: "8px 0 0" }}>
+                      <strong style={{ color: "#00F2FE" }}>Why:</strong> {result.explanation}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </section>
 
             <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
               <button

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   generateMatchQuestions,
   getPublicQuestion,
+  normalizeCompletedQuestionIds,
   Question
 } from "./validator.js";
 import {
@@ -16,6 +17,8 @@ type LocalPhase = "question" | "handoff" | "resolved" | "finished";
 
 export type LocalQuestionResult = {
   questionNumber: number;
+  questionId: string;
+  prompt: string;
   level: number;
   levelName: string;
   subject: string;
@@ -35,6 +38,7 @@ export type LocalBattle = {
   id: string;
   ownerId: string;
   playerNames: [string, string];
+  grade: number;
   miniGameMode: MiniGameMode;
   questions: Question[];
   answers: [string | null, string | null];
@@ -62,13 +66,24 @@ function playerName(value: unknown): string {
 export class LocalPracticeManager {
   private battles = new Map<string, LocalBattle>();
 
-  startBattle(ownerId: string, player1Name: unknown, player2Name: unknown, gameModeInput?: unknown) {
-    const battleQuestions = generateMatchQuestions();
+  startBattle(
+    ownerId: string,
+    player1Name: unknown,
+    player2Name: unknown,
+    gameModeInput?: unknown,
+    gradeInput?: unknown,
+    completedQuestionIdsInput?: unknown
+  ) {
+    const grade = Number(gradeInput) || 7;
+    const miniGameMode = normalizeMiniGameMode(gameModeInput);
+    const completedQuestionIds = normalizeCompletedQuestionIds(completedQuestionIdsInput);
+    const battleQuestions = generateMatchQuestions(grade, miniGameMode, completedQuestionIds);
     const battle: LocalBattle = {
       id: randomUUID(),
       ownerId,
       playerNames: [playerName(player1Name), playerName(player2Name)],
-      miniGameMode: normalizeMiniGameMode(gameModeInput),
+      grade,
+      miniGameMode,
       questions: battleQuestions,
       answers: [null, null],
       scores: [0, 0],
@@ -162,6 +177,10 @@ export class LocalPracticeManager {
 
     const roundResult: LocalQuestionResult = {
       questionNumber: battle.questionIndex + 1,
+      questionId: currentQuestion.id,
+      prompt: activeMiniGame === "memory-logic"
+        ? "Memorize and replay the signal sequence shown for this round."
+        : currentQuestion.prompt,
       level: currentQuestion.level,
       levelName: currentQuestion.levelName,
       subject: currentQuestion.subject,
@@ -265,6 +284,7 @@ export class LocalPracticeManager {
 
     return {
       id: battle.id,
+      grade: battle.grade,
       status: battle.status,
       gameMode: battle.miniGameMode,
       activeMiniGame,

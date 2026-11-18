@@ -32,7 +32,7 @@ export const AVAILABLE_GRADES = [
   { grade: 11, label: "Class 11-12 & Advanced", description: "Calculus, Permutations, Physics & High-Level CS" }
 ];
 
-export const QUESTION_POOL: Question[] = [
+const CURATED_QUESTION_POOL: Question[] = [
   // ==========================================
   // CLASS 7 QUESTIONS
   // ==========================================
@@ -470,29 +470,289 @@ export const QUESTION_POOL: Question[] = [
   }
 ];
 
+const GENERATED_VARIANTS_PER_LEVEL = 20;
+const POINTS_BY_LEVEL = [10, 15, 20, 25, 30];
+const DAMAGE_BY_LEVEL = [20, 22, 25, 30, 35];
+
+function choiceOptions(correctAnswer: string, alternatives: string[], seed: number) {
+  const options = [...new Set([correctAnswer, ...alternatives])];
+  while (options.length < 4) {
+    options.push(`Not ${correctAnswer} (${options.length})`);
+  }
+  const shift = seed % options.length;
+  return [...options.slice(shift), ...options.slice(0, shift)];
+}
+
+function numericOptions(correctAnswer: number, seed: number) {
+  return choiceOptions(
+    String(correctAnswer),
+    [
+      String(correctAnswer + seed + 1),
+      String(correctAnswer - seed - 1),
+      String(correctAnswer + seed + 3)
+    ],
+    seed
+  );
+}
+
+function makeGeneratedQuestion(
+  grade: number,
+  subject: QuestionSubject,
+  level: number,
+  variant: number
+): Question {
+  const seed = grade * 17 + level * 11 + variant * 7;
+  let prompt: string;
+  let correctAnswer: string;
+  let options: string[];
+  let explanation: string;
+
+  if (subject === "math") {
+    if (level === 1) {
+      const first = grade + variant * 3;
+      const second = variant + 2;
+      const answer = first + second * 2;
+      prompt = `Calculate ${first} + ${second} × 2.`;
+      correctAnswer = String(answer);
+      options = numericOptions(answer, seed);
+      explanation = `Use order of operations: multiply first, so ${second} × 2 = ${second * 2}. Then add ${first}: ${first} + ${second * 2} = ${answer}.`;
+    } else if (level === 2) {
+      const answer = grade + variant + 2;
+      const offset = variant + 3;
+      const total = answer + offset;
+      prompt = `Solve for x: x + ${offset} = ${total}.`;
+      correctAnswer = String(answer);
+      options = numericOptions(answer, seed);
+      explanation = `Subtract ${offset} from both sides: x = ${total} − ${offset} = ${answer}.`;
+    } else if (level === 3) {
+      const percent = [10, 20, 25, 50][variant % 4];
+      const whole = (grade + variant + 5) * 20;
+      const answer = whole * percent / 100;
+      prompt = `What is ${percent}% of ${whole}?`;
+      correctAnswer = String(answer);
+      options = numericOptions(answer, seed);
+      explanation = `Convert the percentage to a decimal and multiply: ${percent}% = ${percent / 100}, then ${whole} × ${percent / 100} = ${answer}.`;
+    } else if (level === 4) {
+      const length = grade + variant + 5;
+      const width = variant + 3;
+      const answer = length * width;
+      prompt = `A rectangle is ${length} cm long and ${width} cm wide. What is its area?`;
+      correctAnswer = String(answer);
+      options = numericOptions(answer, seed);
+      explanation = `Area of a rectangle = length × width. Substitute the measurements: ${length} × ${width} = ${answer} cm².`;
+    } else {
+      const time = variant + 2;
+      const speed = grade + variant + 3;
+      const distance = speed * time;
+      prompt = `A cyclist travels ${distance} km in ${time} hours. What is the average speed?`;
+      correctAnswer = String(speed);
+      options = numericOptions(speed, seed);
+      explanation = `Average speed = distance ÷ time. Divide ${distance} km by ${time} hours: ${distance} ÷ ${time} = ${speed} km/h.`;
+    }
+  } else if (subject === "coding") {
+    if (level === 1) {
+      const first = grade * 10 + variant;
+      const second = variant + 2;
+      const answer = first + second;
+      prompt = `What does this Python code print?\nvalue = ${first}\nvalue += ${second}\nprint(value)`;
+      correctAnswer = String(answer);
+      options = numericOptions(answer, seed);
+      explanation = `The assignment starts value at ${first}. The += statement adds ${second}, so value becomes ${first} + ${second} = ${answer}.`;
+    } else if (level === 2) {
+      const initialCount = 2 + (variant % 3);
+      const addedCount = 1 + (variant % 2);
+      const firstItem = grade * 10 + variant;
+      const initialItems = Array.from({ length: initialCount }, (_, index) => firstItem + index);
+      const addedItems = Array.from({ length: addedCount }, (_, index) => firstItem + initialCount + index);
+      const answer = initialCount + addedCount;
+      prompt = `What does this Python code print?\nitems = [${initialItems.join(", ")}]\nitems.extend([${addedItems.join(", ")}])\nprint(len(items))`;
+      correctAnswer = String(answer);
+      options = numericOptions(answer, seed);
+      explanation = `The list begins with ${initialCount} items. extend adds ${addedCount} more, so len(items) returns ${initialCount} + ${addedCount} = ${answer}.`;
+    } else if (level === 3) {
+      const start = grade * 10 + variant;
+      const end = start + 3 + variant;
+      let answer = 0;
+      for (let number = start; number < end; number++) answer += number;
+      prompt = `What does this Python loop print?\ntotal = 0\nfor number in range(${start}, ${end}):\n    total += number\nprint(total)`;
+      correctAnswer = String(answer);
+      options = numericOptions(answer, seed);
+      explanation = `range(${start}, ${end}) includes ${start} through ${end - 1}. Add those values into total to get ${answer}.`;
+    } else if (level === 4) {
+      const divisor = 2 + (variant % 4);
+      const value = grade * 10 + variant;
+      const divisible = value % divisor === 0;
+      prompt = `What does this Python condition print?\nvalue = ${value}\nif value % ${divisor} == 0:\n    print("yes")\nelse:\n    print("no")`;
+      correctAnswer = divisible ? "yes" : "no";
+      options = choiceOptions(correctAnswer, [divisible ? "no" : "yes", "0", "Error"], seed);
+      explanation = `${value} ÷ ${divisor} ${divisible ? "has no remainder, so the condition is true and the code prints yes" : `leaves a remainder of ${value % divisor}, so the code prints no`}.`;
+    } else {
+      const start = grade * 5 + variant;
+      const end = start + 8;
+      const divisor = 2 + (variant % 3);
+      const remainder = variant % divisor;
+      const answer = `[${Array.from({ length: 8 }, (_, index) => start + index).filter(value => value % divisor === remainder).join(", ")}]`;
+      const alternatives = [
+        `[${Array.from({ length: 8 }, (_, index) => start + index).filter(value => value % divisor !== remainder).join(", ")}]`,
+        "[]",
+        `[${remainder}]`
+      ];
+      prompt = `What list is printed by this Python code?\nprint([n for n in range(${start}, ${end}) if n % ${divisor} == ${remainder}])`;
+      correctAnswer = answer;
+      options = choiceOptions(answer, alternatives, seed);
+      explanation = `range(${start}, ${end}) produces integers from ${start} to ${end - 1}. Keep only values whose remainder after division by ${divisor} is ${remainder}; the resulting list is ${answer}.`;
+    }
+  } else if (level === 1) {
+    const first = grade * 10 + variant;
+    const step = variant + 2;
+    const answer = first + step * 4;
+    prompt = `Find the next number: ${first}, ${first + step}, ${first + step * 2}, ${first + step * 3}, __.`;
+    correctAnswer = String(answer);
+    options = numericOptions(answer, seed);
+    explanation = `Each term increases by ${step}. Add ${step} to ${first + step * 3} to get ${answer}.`;
+  } else if (level === 2) {
+    const offset = grade * 10 + variant;
+    const first = offset + 1;
+    const terms = [first, first + 1, first + 2, first + 3].map(value => value * value + offset);
+    const answer = (first + 4) * (first + 4) + offset;
+    prompt = `Find the next number: ${terms.join(", ")}, __.`;
+    correctAnswer = String(answer);
+    options = numericOptions(answer, seed);
+    explanation = `The terms are consecutive squares plus ${offset}: ${first}² + ${offset}, (${first + 1})² + ${offset}, and so on. The next is (${first + 4})² + ${offset} = ${answer}.`;
+  } else if (level === 3) {
+    const first = grade * 10 + variant + 1;
+    const second = variant + 2;
+    const terms = [first, second];
+    for (let index = 0; index < 3; index++) terms.push(terms[terms.length - 1] + terms[terms.length - 2]);
+    const answer = terms[terms.length - 1] + terms[terms.length - 2];
+    prompt = `Find the next number in the sequence: ${terms.join(", ")}, __.`;
+    correctAnswer = String(answer);
+    options = numericOptions(answer, seed);
+    explanation = `Starting with ${first} and ${second}, each new term is the sum of the previous two. The next value is ${terms[terms.length - 1]} + ${terms[terms.length - 2]} = ${answer}.`;
+  } else if (level === 4) {
+    const first = grade * 10 + variant;
+    const step = variant + 1;
+    const terms = [first];
+    let difference = step;
+    for (let index = 0; index < 4; index++) {
+      terms.push(terms[terms.length - 1] + difference);
+      difference++;
+    }
+    const answer = terms[terms.length - 1] + difference;
+    prompt = `Find the next number: ${terms.join(", ")}, __.`;
+    correctAnswer = String(answer);
+    options = numericOptions(answer, seed);
+    explanation = `The gaps grow by 1 each time: ${step}, ${step + 1}, ${step + 2}, ${step + 3}. The next gap is ${difference}, so ${terms[terms.length - 1]} + ${difference} = ${answer}.`;
+  } else {
+    const first = grade * 10 + variant + 2;
+    const step = variant + 2;
+    const second = first + step;
+    const third = second * 2;
+    const fourth = third + step;
+    const fifth = fourth * 2;
+    const answer = fifth + step;
+    prompt = `Find the next number: ${first}, ${second}, ${third}, ${fourth}, ${fifth}, __.`;
+    correctAnswer = String(answer);
+    options = numericOptions(answer, seed);
+    explanation = `The operations alternate: add ${step}, multiply by 2, add ${step}, multiply by 2. The next step is to add ${step}: ${fifth} + ${step} = ${answer}.`;
+  }
+
+  return {
+    id: `generated-g${grade}-${subject}-l${level}-v${variant}`,
+    grade,
+    level,
+    levelName: LEVEL_NAMES[level - 1],
+    subject,
+    prompt: `Class ${grade} challenge: ${prompt}`,
+    options,
+    correctAnswer,
+    explanation,
+    points: POINTS_BY_LEVEL[level - 1],
+    damage: DAMAGE_BY_LEVEL[level - 1]
+  };
+}
+
+const generatedQuestions: Question[] = [];
+for (const grade of [7, 8, 9, 10, 11]) {
+  for (const subject of ["math", "coding", "logic"] as const) {
+    for (let level = 1; level <= 5; level++) {
+      for (let variant = 0; variant < GENERATED_VARIANTS_PER_LEVEL; variant++) {
+        generatedQuestions.push(makeGeneratedQuestion(grade, subject, level, variant));
+      }
+    }
+  }
+}
+
+export const QUESTION_POOL: Question[] = [...CURATED_QUESTION_POOL, ...generatedQuestions];
+const KNOWN_QUESTION_IDS = new Set(QUESTION_POOL.map(question => question.id));
+
+const SUBJECT_BY_MINI_GAME: Record<string, QuestionSubject> = {
+  "code-runner": "coding",
+  "math-defense": "math",
+  "memory-logic": "logic"
+};
+const MIXED_ARCADE_SUBJECTS: QuestionSubject[] = ["math", "coding", "logic", "coding", "math"];
+
+function subjectForMode(mode: string, level: number): QuestionSubject {
+  return mode === "mixed-arcade"
+    ? MIXED_ARCADE_SUBJECTS[level - 1]
+    : SUBJECT_BY_MINI_GAME[mode] || "math";
+}
+
+export function normalizeCompletedQuestionIds(value: unknown = []): string[] {
+  if (!Array.isArray(value) || value.length > QUESTION_POOL.length) {
+    throw new Error("Invalid completed question history");
+  }
+  if (value.some(id => typeof id !== "string" || id.length > 100)) {
+    throw new Error("Invalid completed question history");
+  }
+  return [...new Set(value.filter((id: string) => KNOWN_QUESTION_IDS.has(id)))];
+}
+
 /**
- * Return 5 questions specifically tailored for the student's chosen class/grade.
- * Exactly one question from Level 1, Level 2, Level 3, Level 4, and Level 5.
+ * Return five grade- and mode-aligned questions, excluding questions completed by this browser profile.
  */
-export function generateMatchQuestions(grade: number = 7): Question[] {
-  // Normalize grade to known cohorts (7, 8, 9, 10, 11)
-  const targetGrade = grade >= 11 ? 11 : Math.max(7, Math.min(10, grade));
+export function generateMatchQuestions(
+  gradeInput: number = 7,
+  gameModeInput: string = "mixed-arcade",
+  completedQuestionIdsInput: unknown = []
+): Question[] {
+  const grade = Number(gradeInput);
+  const targetGrade = !Number.isFinite(grade)
+    ? 7
+    : grade >= 11
+      ? 11
+      : Math.max(7, Math.min(10, Math.floor(grade)));
+  const gameMode = ["mixed-arcade", "code-runner", "math-defense", "memory-logic"].includes(gameModeInput)
+    ? gameModeInput
+    : "mixed-arcade";
+  const completedQuestionIds = new Set(normalizeCompletedQuestionIds(completedQuestionIdsInput));
 
   const matchQuestions: Question[] = [];
 
-  for (let lvl = 1; lvl <= 5; lvl++) {
-    // Look for questions matching this grade and difficulty level
-    let candidates = QUESTION_POOL.filter(q => q.grade === targetGrade && q.level === lvl);
+  for (let level = 1; level <= 5; level++) {
+    const subject = subjectForMode(gameMode, level);
+    const candidates = QUESTION_POOL.filter(question =>
+      question.grade === targetGrade
+      && question.level === level
+      && question.subject === subject
+      && !completedQuestionIds.has(question.id)
+    );
 
-    // Fallback to any question of that level if specific grade pool is empty
     if (candidates.length === 0) {
-      candidates = QUESTION_POOL.filter(q => q.level === lvl);
+      const subjectName = subject[0].toUpperCase() + subject.slice(1);
+      const modeName = gameMode === "mixed-arcade"
+        ? "Mixed Arcade"
+        : gameMode === "code-runner"
+          ? "Code Runner"
+          : gameMode === "math-defense"
+            ? "Math Tower Defense"
+            : "Memory & Logic";
+      throw new Error(`No unused ${subjectName} questions remain for Class ${targetGrade} in ${modeName}.`);
     }
 
-    if (candidates.length > 0) {
-      const randomIndex = Math.floor(Math.random() * candidates.length);
-      matchQuestions.push(candidates[randomIndex]);
-    }
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    matchQuestions.push(candidates[randomIndex]);
   }
 
   return matchQuestions;
