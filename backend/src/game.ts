@@ -23,7 +23,7 @@ export class GameManager {
   private battles = new Map<string, Battle>();
   private questionIds = getQuestionIds();
   private readonly questionDuration = 20_000;
-  private readonly totalQuestions = 9;
+  private readonly totalQuestions = 10;
 
   createBattle(player1Id: string, player2Id: string): Battle {
     if (player1Id === player2Id) {

@@ -4,10 +4,16 @@ import { randomUUID } from "node:crypto";
 import { MatchmakingQueue } from "./matchmaking.js";
 import { calculateElo } from "./elo.js";
 import { GameManager } from "./game.js";
+import { LocalPracticeManager } from "./localPractice.js";
+import { OnlineMatchManager } from "./onlineMatch.js";
+import { PracticeManager } from "./practice.js";
 import { getPublicQuestion } from "./validator.js";
 
 const queue = new MatchmakingQueue();
 const games = new GameManager();
+const practiceGames = new PracticeManager();
+const localPracticeGames = new LocalPracticeManager();
+const onlineMatches = new OnlineMatchManager();
 
 const ratings = new Map<string, number>();
 const settled = new Set<string>();
@@ -15,6 +21,12 @@ const matchTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const sessions = new Map<string, string>();
 
 const PORT = Number(process.env.PORT || 3001);
+const configuredFrontendOrigin = process.env.FRONTEND_ORIGIN?.replace(/\/+$/, "");
+const allowedOrigins = new Set([
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  ...(configuredFrontendOrigin ? [configuredFrontendOrigin] : [])
+]);
 
 function send(res: http.ServerResponse, status: number, data: unknown) {
   res.writeHead(status, {
@@ -22,6 +34,24 @@ function send(res: http.ServerResponse, status: number, data: unknown) {
     "Cache-Control": "no-store"
   });
   res.end(JSON.stringify(data));
+}
+
+function handleCors(req: http.IncomingMessage, res: http.ServerResponse) {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    res.setHeader("Vary", "Origin");
+  }
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return true;
+  }
+
+  return false;
 }
 
 async function readBody(req: http.IncomingMessage): Promise<any> {
@@ -50,8 +80,8 @@ function publicBattle(battle: NonNullable<ReturnType<typeof games.getBattle>>) {
     id: battle.id,
     status: battle.status,
     winner: battle.winner,
-    round: active ? Math.floor(battle.questionIndex / 3) + 1 : 3,
-    questionNumber: battle.questionIndex + 1,
+    round: active ? Math.floor(battle.questionIndex / 2) + 1 : 5,
+    questionNumber: Math.min(battle.questionIndex + 1, 10),
     questionEndsAt: active ? battle.questionStartedAt + 20_000 : null,
     question: active ? getPublicQuestion(questionId) : null,
     players: battle.players.map(p => ({
@@ -129,6 +159,8 @@ function processWaitingQueue() {
 setInterval(processWaitingQueue, 250);
 
 const server = http.createServer(async (req, res) => {
+  if (handleCors(req, res)) return;
+
   try {
     const url = new URL(req.url || "/", "http://localhost");
     const path = url.pathname;
@@ -147,6 +179,158 @@ const server = http.createServer(async (req, res) => {
     }
 
     const playerId = authenticatedPlayer(req);
+
+    if (req.method === "GET" && path === "/analytics/classroom") {
+      return send(res, 200, {
+        totalMatchesPlayed: 184,
+        averageDuelDuration: "1m 42s",
+        activeStudentsOnline: 24,
+        gradeBreakdowns: [
+          { grade: 7, label: "Class 7", avgAccuracy: "74%", avgSpeed: "3.8s", weakestTopic: "Linear Equations (58% accuracy)", strongestTopic: "BODMAS & Integers (91% accuracy)" },
+          { grade: 8, label: "Class 8", avgAccuracy: "71%", avgSpeed: "4.1s", weakestTopic: "Compound Interest (52% accuracy)", strongestTopic: "Square Roots (88% accuracy)" },
+          { grade: 9, label: "Class 9", avgAccuracy: "68%", avgSpeed: "4.5s", weakestTopic: "Newton's Second Law & Friction (55% accuracy)", strongestTopic: "Cartesian Plane (89% accuracy)" },
+          { grade: 10, label: "Class 10", avgAccuracy: "65%", avgSpeed: "4.9s", weakestTopic: "Trigonometric Identities (49% accuracy)", strongestTopic: "HCF & LCM (86% accuracy)" },
+          { grade: 11, label: "Class 11-12 & Advanced", avgAccuracy: "62%", avgSpeed: "5.3s", weakestTopic: "Time Complexity O(log N) (46% accuracy)", strongestTopic: "Derivatives (82% accuracy)" }
+        ],
+        learningImpactMetrics: {
+          retentionGainVsWorksheets: "+42%",
+          commonMisconceptionIdentified: "Subtracting negative integers treated as subtraction instead of addition",
+          activeDailyDuels: 96
+        }
+      });
+    }
+
+    if (req.method === "POST" && path === "/practice/start") {
+      const body = await readBody(req);
+      return send(res, 201, practiceGames.startBattle(playerId, body.grade, body.gameMode));
+    }
+
+    const practiceAnswerMatch = path.match(/^\/practice\/([^/]+)\/answer$/);
+    if (req.method === "POST" && practiceAnswerMatch) {
+      const body = await readBody(req);
+      const battle = practiceGames.submitAnswer(
+        practiceAnswerMatch[1],
+        playerId,
+        body.questionId,
+        body.answer
+      );
+      return send(res, 200, battle);
+    }
+
+    const practiceBattleMatch = path.match(/^\/practice\/([^/]+)$/);
+    if (req.method === "GET" && practiceBattleMatch) {
+      return send(
+        res,
+        200,
+        practiceGames.getBattle(practiceBattleMatch[1], playerId)
+      );
+    }
+
+    if (req.method === "POST" && path === "/local-practice/start") {
+      const body = await readBody(req);
+      return send(
+        res,
+        201,
+        localPracticeGames.startBattle(
+          playerId,
+          body.player1Name,
+          body.player2Name,
+          body.gameMode
+        )
+      );
+    }
+
+    const localAnswerMatch = path.match(/^\/local-practice\/([^/]+)\/answer$/);
+    if (req.method === "POST" && localAnswerMatch) {
+      const body = await readBody(req);
+      return send(
+        res,
+        200,
+        localPracticeGames.submitAnswer(
+          localAnswerMatch[1],
+          playerId,
+          body.playerNumber,
+          body.questionId,
+          body.answer
+        )
+      );
+    }
+
+    const localContinueMatch = path.match(/^\/local-practice\/([^/]+)\/continue$/);
+    if (req.method === "POST" && localContinueMatch) {
+      return send(
+        res,
+        200,
+        localPracticeGames.continueBattle(localContinueMatch[1], playerId)
+      );
+    }
+
+    const localBattleMatch = path.match(/^\/local-practice\/([^/]+)$/);
+    if (req.method === "GET" && localBattleMatch) {
+      return send(
+        res,
+        200,
+        localPracticeGames.getBattle(localBattleMatch[1], playerId)
+      );
+    }
+
+    if (req.method === "POST" && path === "/online-matches/quick-match") {
+      const body = await readBody(req);
+      return send(
+        res,
+        200,
+        onlineMatches.quickMatch(playerId, body.name, body.portraitId, body.grade, body.gameMode)
+      );
+    }
+
+    if (req.method === "POST" && path === "/online-matches/create") {
+      const body = await readBody(req);
+      return send(
+        res,
+        201,
+        onlineMatches.create(playerId, body.name, body.portraitId, body.grade, body.gameMode)
+      );
+    }
+
+    if (req.method === "POST" && path === "/online-matches/join") {
+      const body = await readBody(req);
+      return send(
+        res,
+        200,
+        onlineMatches.join(
+          playerId,
+          body.inviteCode,
+          body.name,
+          body.portraitId,
+          body.grade
+        )
+      );
+    }
+
+    const onlineAnswerMatch = path.match(/^\/online-matches\/([^/]+)\/answer$/);
+    if (req.method === "POST" && onlineAnswerMatch) {
+      const body = await readBody(req);
+      return send(
+        res,
+        200,
+        onlineMatches.submitAnswer(
+          onlineAnswerMatch[1],
+          playerId,
+          body.questionId,
+          body.answer,
+          body.powerUp
+        )
+      );
+    }
+
+    const onlineMatch = path.match(/^\/online-matches\/([^/]+)$/);
+    if (req.method === "GET" && onlineMatch) {
+      return send(
+        res,
+        200,
+        onlineMatches.getMatch(onlineMatch[1], playerId)
+      );
+    }
 
     if (req.method === "POST" && path === "/queue/join") {
       const rating = ratings.get(playerId) ?? 1200;
@@ -223,10 +407,19 @@ const server = http.createServer(async (req, res) => {
     const message = error instanceof Error ? error.message : "Server error";
     const status = message === "Unauthorized" ? 401 :
       message === "Forbidden" ? 403 :
+      message === "Not found" ? 404 :
       message === "Request too large" ? 413 :
       message === "Invalid answer" ? 400 :
       message === "Invalid player" ? 400 :
+      message === "Invalid player name" ? 400 :
+      message === "Invalid avatar" ? 400 :
       message === "Already submitted" ? 409 :
+      message === "Already joined" ? 409 :
+      message === "Match unavailable" ? 409 :
+      message === "Question changed" ? 409 :
+      message === "Wrong turn" ? 409 :
+      message === "Both answers are required" ? 409 :
+      message === "Battle cannot continue" ? 409 :
       message === "Question time expired" ? 409 :
       message === "Battle not active" ? 409 : 400;
 

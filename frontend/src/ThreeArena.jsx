@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -53,6 +53,7 @@ async function addModel(scene, model, slot, setError, isActive) {
     fighter.position.x = slot === "player" ? -2.05 : 2.05;
     fighter.rotation.y = slot === "player" ? 0.3 : -0.3;
     fighter.userData.baseHeight = fighter.position.y;
+    fighter.userData.slot = slot;
     fighter.userData.isFighterModel = true;
     if (loadedGltf.animations.length > 0) {
       const idleAnimation = loadedGltf.animations.find((animation) => /idle/i.test(animation.name)) || loadedGltf.animations[0];
@@ -68,29 +69,6 @@ async function addModel(scene, model, slot, setError, isActive) {
   }
 }
 
-function addBuilding(scene, x, height, index) {
-  const width = index % 3 === 0 ? 1.15 : 0.8;
-  const material = new THREE.MeshStandardMaterial({
-    color: index % 2 === 0 ? 0x151b34 : 0x1b1937,
-    roughness: 0.84,
-    metalness: 0.15
-  });
-  const building = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.75), material);
-  building.position.set(x, height / 2 - 0.2, -6.5);
-  scene.add(building);
-
-  const windowMaterial = new THREE.MeshBasicMaterial({
-    color: index % 2 === 0 ? 0x4abde8 : 0xa16cff,
-    transparent: true,
-    opacity: 0.4
-  });
-  for (let row = 0; row < Math.floor(height / 0.55); row += 1) {
-    const windowLight = new THREE.Mesh(new THREE.BoxGeometry(width * 0.44, 0.035, 0.02), windowMaterial);
-    windowLight.position.set(x, row * 0.55 + 0.15, -6.1);
-    scene.add(windowLight);
-  }
-}
-
 function buildArena(scene) {
   scene.background = new THREE.Color("#080a18");
   scene.fog = new THREE.Fog("#080a18", 13, 28);
@@ -100,143 +78,108 @@ function buildArena(scene) {
   keyLight.position.set(-4, 8, 6);
   scene.add(keyLight);
 
-  const cyanLight = new THREE.PointLight(0x37cfff, 95, 14, 2);
-  cyanLight.position.set(-5, 3.4, 1);
-  scene.add(cyanLight);
-  const violetLight = new THREE.PointLight(0xa34bff, 110, 14, 2);
-  violetLight.position.set(5, 3.8, 0);
-  scene.add(violetLight);
-  const topLight = new THREE.PointLight(0x816aff, 70, 13, 2);
-  topLight.position.set(0, 7, -3);
-  scene.add(topLight);
+  const fillLight = new THREE.DirectionalLight(0x7f4eff, 2.4);
+  fillLight.position.set(5, 4, 3);
+  scene.add(fillLight);
 
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(34, 30),
-    new THREE.MeshStandardMaterial({ color: 0x0d1124, roughness: 0.42, metalness: 0.64 })
+  const arenaFloor = new THREE.Mesh(
+    new THREE.CylinderGeometry(4.8, 5.2, 0.45, 40),
+    new THREE.MeshStandardMaterial({
+      color: 0x12172a,
+      roughness: 0.35,
+      metalness: 0.8
+    })
   );
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.set(0, -0.08, -1.5);
-  scene.add(floor);
-
-  const grid = new THREE.GridHelper(28, 44, 0x53c9f3, 0x26345e);
-  grid.position.set(0, -0.045, -1.5);
-  grid.material.transparent = true;
-  grid.material.opacity = 0.24;
-  scene.add(grid);
-
-  const platform = new THREE.Mesh(
-    new THREE.CylinderGeometry(5.2, 5.45, 0.28, 72),
-    new THREE.MeshStandardMaterial({ color: 0x171b35, roughness: 0.3, metalness: 0.72 })
-  );
-  platform.position.y = 0.08;
-  scene.add(platform);
-
-  const platformEdge = new THREE.Mesh(
-    new THREE.TorusGeometry(5.18, 0.055, 8, 100),
-    new THREE.MeshBasicMaterial({ color: 0x57dfff })
-  );
-  platformEdge.rotation.x = Math.PI / 2;
-  platformEdge.position.y = 0.23;
-  scene.add(platformEdge);
+  arenaFloor.position.y = -0.22;
+  scene.add(arenaFloor);
 
   const innerRing = new THREE.Mesh(
-    new THREE.TorusGeometry(3.55, 0.024, 6, 96),
-    new THREE.MeshBasicMaterial({ color: 0xa678ff, transparent: true, opacity: 0.8 })
+    new THREE.RingGeometry(2.2, 2.35, 48),
+    new THREE.MeshBasicMaterial({ color: 0x00f2fe, side: THREE.DoubleSide })
   );
-  innerRing.rotation.x = Math.PI / 2;
-  innerRing.position.y = 0.235;
+  innerRing.rotation.x = -Math.PI / 2;
+  innerRing.position.y = 0.02;
   scene.add(innerRing);
 
-  for (let index = 0; index < 19; index += 1) {
-    const x = (index - 9) * 1.3;
-    const height = 1.6 + ((index * 7) % 8) * 0.46;
-    addBuilding(scene, x, height, index);
-  }
+  const playerLight = new THREE.PointLight(0x00f2fe, 3.5, 6.5);
+  playerLight.position.set(-2.05, 1.8, 1.2);
+  scene.add(playerLight);
 
-  for (const x of [-6.2, 6.2]) {
-    const beam = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.035, 0.035, 4.7, 10),
-      new THREE.MeshBasicMaterial({ color: x < 0 ? 0x55dfff : 0xb876ff, transparent: true, opacity: 0.72 })
-    );
-    beam.position.set(x, 2.35, -1.5);
-    scene.add(beam);
-  }
+  const rivalLight = new THREE.PointLight(0xff007a, 3.5, 6.5);
+  rivalLight.position.set(2.05, 1.8, 1.2);
+  scene.add(rivalLight);
 
-  for (const x of [-2.05, 2.05]) {
-    const pedestal = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.72, 0.84, 0.18, 48),
-      new THREE.MeshStandardMaterial({ color: 0x212340, metalness: 0.72, roughness: 0.28 })
-    );
-    pedestal.position.set(x, 0.31, 0.5);
-    scene.add(pedestal);
-    const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(0.7, 0.025, 6, 48),
-      new THREE.MeshBasicMaterial({ color: x < 0 ? 0x5de4ff : 0xbf81ff })
-    );
-    rim.rotation.x = Math.PI / 2;
-    rim.position.set(x, 0.41, 0.5);
-    scene.add(rim);
-  }
-
-  return { platformEdge, innerRing };
+  return { innerRing, playerLight, rivalLight };
 }
 
 export default function ThreeArena({
   models,
-  playerName,
-  opponentName,
+  playerName = "Fighter 1",
+  opponentName = "Fighter 2",
+  playerAvatar,
+  opponentAvatar,
   compact = false,
   isRunning = false,
   className = "",
-  onModelError
+  onModelError,
+  combatVisual = null // { attacker: "player" | "opponent", damage: number, type: "hit" | "blocked", id: number }
 }) {
   const containerRef = useRef(null);
-  const runningRef = useRef(isRunning);
+  const canvasRef = useRef(null);
   const errorHandlerRef = useRef(onModelError);
+  const runningRef = useRef(isRunning);
+  errorHandlerRef.current = onModelError;
+  runningRef.current = isRunning;
 
-  useEffect(() => {
-    runningRef.current = isRunning;
-  }, [isRunning]);
+  // Real-time visual combat state
+  const [activeStrike, setActiveStrike] = useState(null);
+  const [screenShake, setScreenShake] = useState(false);
 
+  // Trigger animations when a combat visual event occurs
   useEffect(() => {
-    errorHandlerRef.current = onModelError;
-  }, [onModelError]);
+    if (!combatVisual || !combatVisual.id) return;
+
+    setActiveStrike(combatVisual);
+    if (combatVisual.type === "hit") {
+      setScreenShake(true);
+    }
+
+    const timer = setTimeout(() => {
+      setActiveStrike(null);
+      setScreenShake(false);
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [combatVisual?.id]);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return undefined;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return undefined;
 
     let active = true;
     let animationFrame = 0;
-    let renderer;
-    let controls;
-    let arenaEffects;
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 60);
-    camera.position.set(0, compact ? 3.4 : 4.1, compact ? 12 : 11.6);
-    camera.lookAt(0, 1.35, -0.6);
 
-    try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
-      container.prepend(renderer.domElement);
-      arenaEffects = buildArena(scene);
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.target.set(0, 1.35, -0.6);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.06;
-      controls.enablePan = false;
-      controls.enableZoom = !compact;
-      controls.minDistance = 7;
-      controls.maxDistance = 16;
-      controls.maxPolarAngle = Math.PI / 2.05;
-    } catch (error) {
-      errorHandlerRef.current?.(error instanceof Error ? error.message : "WebGL is unavailable in this browser.");
-      return undefined;
-    }
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(36, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(0, compact ? 1.6 : 1.9, compact ? 5.8 : 6.8);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(container.clientWidth, container.clientHeight, false);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.enableZoom = false;
+    controls.minPolarAngle = Math.PI * 0.35;
+    controls.maxPolarAngle = Math.PI * 0.52;
+    controls.minAzimuthAngle = -Math.PI * 0.22;
+    controls.maxAzimuthAngle = Math.PI * 0.22;
+    controls.target.set(0, 1.1, 0);
+    controls.update();
+
+    const arenaEffects = buildArena(scene);
 
     addModel(scene, models?.player, "player", (error) => errorHandlerRef.current?.(error), () => active);
     addModel(scene, models?.opponent, "opponent", (error) => errorHandlerRef.current?.(error), () => active);
@@ -254,24 +197,24 @@ export default function ThreeArena({
 
     const startTime = performance.now();
     let lastFrameTime = startTime;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const animate = () => {
       const now = performance.now();
       const delta = Math.min((now - lastFrameTime) / 1000, 0.05);
       lastFrameTime = now;
-      const time = reduceMotion ? 0 : (now - startTime) / 1000;
+      const time = (now - startTime) / 1000;
+
       scene.traverse((object) => {
         if (object.userData.isFighterModel) {
-          const movement = runningRef.current ? 0.07 : 0.022;
-          object.position.y = object.userData.baseHeight + Math.sin(time * 1.8 + object.position.x) * movement;
+          const movement = runningRef.current ? 0.06 : 0.02;
+          object.position.y = object.userData.baseHeight + Math.sin(time * 2.0 + object.position.x) * movement;
           object.userData.animationMixer?.update(delta);
         }
       });
-      arenaEffects.platformEdge.rotation.y = Math.sin(time * 0.18) * 0.025;
-      arenaEffects.innerRing.rotation.y = -time * 0.08;
+
+      arenaEffects.innerRing.rotation.z = time * 0.25;
       controls.update();
       renderer.render(scene, camera);
-      if (!reduceMotion) animationFrame = window.requestAnimationFrame(animate);
+      animationFrame = window.requestAnimationFrame(animate);
     };
     animate();
 
@@ -283,26 +226,96 @@ export default function ThreeArena({
       controls.dispose();
       disposeObject(scene);
       renderer.dispose();
-      renderer.domElement.remove();
     };
   }, [compact, models?.opponent?.url, models?.player?.url]);
 
-  const empty = !models?.player && !models?.opponent;
+  const isPlayerAttacking = activeStrike && activeStrike.attacker === "player";
+  const isOpponentAttacking = activeStrike && activeStrike.attacker === "opponent";
+  const isPlayerDefending = activeStrike && activeStrike.defender === "player";
+  const isOpponentDefending = activeStrike && activeStrike.defender === "opponent";
+
   return (
     <div
-      className={`three-arena ${compact ? "three-arena-compact" : ""} ${className}`}
+      className={`three-arena ${compact ? "three-arena-compact" : ""} ${screenShake ? "arena-shake-active" : ""} ${className}`}
       ref={containerRef}
       role="img"
-      aria-label="Three-dimensional neon training arena"
+      aria-label="BrainBytes 1v1 Arena"
+      style={{ position: "relative", overflow: "hidden" }}
     >
-      <div className="three-arena-title" aria-hidden="true">BRAINBYTES <span>3D ARENA</span></div>
-      <div className="three-fighter-tag three-fighter-player" aria-hidden="true">
-        <strong>{playerName}</strong><small>{models?.player ? models.player.name : "ADD YOUR MODEL"}</small>
+      <canvas ref={canvasRef} aria-hidden="true" />
+      <div className="three-arena-title" aria-hidden="true">
+        BRAINBYTES <span>1v1 ARENA</span>
       </div>
-      <div className="three-fighter-tag three-fighter-opponent" aria-hidden="true">
-        <strong>{opponentName}</strong><small>{models?.opponent ? models.opponent.name : "ADD RIVAL MODEL"}</small>
+
+      {/* FIGHTER 1 (PLAYER) */}
+      <div className={`three-fighter-tag three-fighter-player`} aria-hidden="true">
+        <strong>{playerName}</strong>
+        <small>{isPlayerAttacking ? "⚡ STRIKING!" : isPlayerDefending ? "💥 HIT!" : "READY"}</small>
       </div>
-      {empty && <p className="three-arena-empty">Upload original GLB or VRM fighters to see them in the arena.</p>}
+
+      {/* FIGHTER 2 (OPPONENT) */}
+      <div className={`three-fighter-tag three-fighter-opponent`} aria-hidden="true">
+        <strong>{opponentName}</strong>
+        <small>{isOpponentAttacking ? "⚡ STRIKING!" : isOpponentDefending ? "💥 HIT!" : "READY"}</small>
+      </div>
+
+      {/* 2D ILLUSTRATED AVATARS WITH REAL COMBAT ACTION ANIMATIONS */}
+      {!models?.player && playerAvatar?.src && (
+        <div
+          className={`arena-avatar-wrapper avatar-player-wrap ${isPlayerAttacking ? "avatar-lunge-attack" : ""} ${isPlayerDefending ? (activeStrike.type === "blocked" ? "avatar-shield-active" : "avatar-stagger-hit") : ""}`}
+        >
+          <img
+            className="three-fighter-avatar three-fighter-avatar-player"
+            src={playerAvatar.src}
+            alt={playerName}
+            draggable="false"
+          />
+          {isPlayerDefending && activeStrike.type === "blocked" && (
+            <div className="quantum-shield-bubble" title="Quantum Shield Absorbed Attack" />
+          )}
+          {isPlayerDefending && activeStrike.type === "hit" && (
+            <div className="combat-hit-splash">
+              <span className="damage-popup-text">-{activeStrike.damage || 25} HP!</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!models?.opponent && opponentAvatar?.src && (
+        <div
+          className={`arena-avatar-wrapper avatar-opponent-wrap ${isOpponentAttacking ? "avatar-lunge-attack-rival" : ""} ${isOpponentDefending ? (activeStrike.type === "blocked" ? "avatar-shield-active" : "avatar-stagger-hit-rival") : ""}`}
+        >
+          <img
+            className="three-fighter-avatar three-fighter-avatar-opponent"
+            src={opponentAvatar.src}
+            alt={opponentName}
+            draggable="false"
+          />
+          {isOpponentDefending && activeStrike.type === "blocked" && (
+            <div className="quantum-shield-bubble" title="Quantum Shield Absorbed Attack" />
+          )}
+          {isOpponentDefending && activeStrike.type === "hit" && (
+            <div className="combat-hit-splash rival-splash">
+              <span className="damage-popup-text">-{activeStrike.damage || 25} HP!</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* HIGH-ENERGY COMBAT LASER / PLASMA STRIKE BEAM */}
+      {isPlayerAttacking && (
+        <div className="plasma-attack-beam beam-to-right" aria-hidden="true">
+          <div className="beam-glow" />
+          <div className="beam-particles" />
+        </div>
+      )}
+
+      {isOpponentAttacking && (
+        <div className="plasma-attack-beam beam-to-left" aria-hidden="true">
+          <div className="beam-glow" />
+          <div className="beam-particles" />
+        </div>
+      )}
     </div>
   );
 }

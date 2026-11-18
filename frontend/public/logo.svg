@@ -1,0 +1,59 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bb-cyan-violet" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#00F2FE" />
+      <stop offset="50%" stopColor="#4FACFE" />
+      <stop offset="100%" stopColor="#9D4EDD" />
+    </linearGradient>
+    <linearGradient id="bb-bolt" x1="24" y1="12" x2="40" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#FFF3B0" />
+      <stop offset="50%" stopColor="#FFD166" />
+      <stop offset="100%" stopColor="#FF007A" />
+    </linearGradient>
+    <radialGradient id="bb-core-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#00F2FE" stopOpacity="0.8" />
+      <stop offset="100%" stopColor="#9D4EDD" stopOpacity="0" />
+    </radialGradient>
+  </defs>
+
+  <circle cx="32" cy="32" r="28" fill="url(#bb-core-glow)" opacity="0.25" />
+
+  <!-- Left Brain Hemisphere -->
+  <path
+    d="M 28 14 C 20 14, 12 18, 10 26 C 8 32, 10 38, 13 41 C 12 45, 14 50, 20 52 C 24 53, 27 50, 28 48"
+    stroke="url(#bb-cyan-violet)"
+    stroke-width="3.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="rgba(0, 242, 254, 0.08)"
+  />
+  <path d="M 13 26 C 18 25, 23 27, 26 25" stroke="#00F2FE" stroke-width="2" stroke-linecap="round" />
+  <path d="M 12 37 C 17 38, 22 34, 26 36" stroke="#00F2FE" stroke-width="2" stroke-linecap="round" />
+  <circle cx="13" cy="26" r="2.2" fill="#00F2FE" />
+  <circle cx="26" cy="25" r="1.8" fill="#FFF" />
+  <circle cx="12" cy="37" r="2.2" fill="#00F2FE" />
+
+  <!-- Right Brain Hemisphere -->
+  <path
+    d="M 36 14 C 44 14, 52 18, 54 26 C 56 32, 54 38, 51 41 C 52 45, 50 50, 44 52 C 40 53, 37 50, 36 48"
+    stroke="url(#bb-cyan-violet)"
+    stroke-width="3.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="rgba(157, 78, 221, 0.08)"
+  />
+  <path d="M 51 26 C 46 25, 41 27, 38 25" stroke="#9D4EDD" stroke-width="2" stroke-linecap="round" />
+  <path d="M 52 37 C 47 38, 42 34, 38 36" stroke="#9D4EDD" stroke-width="2" stroke-linecap="round" />
+  <circle cx="51" cy="26" r="2.2" fill="#9D4EDD" />
+  <circle cx="38" cy="25" r="1.8" fill="#FFF" />
+  <circle cx="52" cy="37" r="2.2" fill="#9D4EDD" />
+
+  <!-- Center Duel Lightning Clash -->
+  <path
+    d="M 35 12 L 27 30 L 34 30 L 29 52 L 40 28 L 33 28 Z"
+    fill="url(#bb-bolt)"
+    stroke="#FFFFFF"
+    stroke-width="1.2"
+    stroke-linejoin="round"
+  />
+</svg>

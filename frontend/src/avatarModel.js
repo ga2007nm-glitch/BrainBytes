@@ -1,5 +1,14 @@
 export const AVATAR_STORAGE_KEY = "brainbytes.avatar.v1";
 
+export const AVATAR_PRESETS = [
+  { id: "nova", name: "Nova", title: "Quantum Mage", color: "#00F2FE", src: "/avatars/nova.jpg" },
+  { id: "kai", name: "Kai", title: "Cyber Ninja", color: "#FF007A", src: "/avatars/kai.jpg" },
+  { id: "lyra", name: "Lyra", title: "Logic Alchemist", color: "#9D4EDD", src: "/avatars/lyra.svg" },
+  { id: "zane", name: "Zane", title: "Code Hacker", color: "#34D399", src: "/avatars/zane.svg" },
+  { id: "maya", name: "Maya", title: "Astro Physicist", color: "#F59E0B", src: "/avatars/maya.svg" },
+  { id: "leo", name: "Leo", title: "Circuit Knight", color: "#3B82F6", src: "/avatars/leo.svg" }
+];
+
 export const AVATAR_CHOICES = {
   skinTone: [
     { label: "Warm beige", value: "#f2c9a5" },
@@ -45,7 +54,8 @@ export const AVATAR_CHOICES = {
 };
 
 export const DEFAULT_AVATAR = {
-  name: "Rookie",
+  name: "Nova",
+  portraitId: "nova",
   skinTone: AVATAR_CHOICES.skinTone[0].value,
   hairColor: AVATAR_CHOICES.hairColor[0].value,
   eyeColor: AVATAR_CHOICES.eyeColor[0].value,
@@ -55,7 +65,7 @@ export const DEFAULT_AVATAR = {
   background: AVATAR_CHOICES.background[0].value
 };
 
-const OPPONENT_NAMES = ["Nova", "Byte", "Pixel", "Comet", "Echo", "Orbit"];
+const OPPONENT_NAMES = ["Nova", "Kai", "Byte", "Pixel", "Comet", "Echo", "Orbit"];
 
 function choose(items) {
   return items[Math.floor(Math.random() * items.length)];
@@ -65,12 +75,22 @@ function isChoice(field, value) {
   return AVATAR_CHOICES[field].some((option) => option.value === value);
 }
 
+export function getAvatarPreset(id) {
+  return AVATAR_PRESETS.find((preset) => preset.id === id) || AVATAR_PRESETS[0];
+}
+
+export function getOpponentPreset(id) {
+  const currentPreset = getAvatarPreset(id);
+  return AVATAR_PRESETS.find((preset) => preset.id !== currentPreset.id) || currentPreset;
+}
+
 function isValidAvatar(value) {
   return value
     && typeof value === "object"
     && typeof value.name === "string"
     && value.name.trim().length > 0
     && value.name.trim().length <= 18
+    && AVATAR_PRESETS.some((preset) => preset.id === value.portraitId)
     && isChoice("skinTone", value.skinTone)
     && isChoice("hairColor", value.hairColor)
     && isChoice("eyeColor", value.eyeColor)
@@ -92,6 +112,7 @@ export function loadSavedAvatar() {
       const migrated = {
         ...DEFAULT_AVATAR,
         ...parsed,
+        portraitId: parsed.portraitId || DEFAULT_AVATAR.portraitId,
         eyeColor: parsed.eyeColor || DEFAULT_AVATAR.eyeColor,
         outfit: parsed.outfit || DEFAULT_AVATAR.outfit
       };
@@ -144,11 +165,15 @@ export function generateRandomAvatar(name) {
     outfit: choose(AVATAR_CHOICES.outfit).value,
     hairstyle: choose(AVATAR_CHOICES.hairstyle).value,
     accessory: choose(AVATAR_CHOICES.accessory).value,
-    background: choose(AVATAR_CHOICES.background).value
+    background: choose(AVATAR_CHOICES.background).value,
+    portraitId: choose(AVATAR_PRESETS).id
   };
 }
 
 export function generateOpponent(previousName) {
   const names = OPPONENT_NAMES.filter((name) => name !== previousName);
-  return generateRandomAvatar(choose(names));
+  return {
+    ...generateRandomAvatar(choose(names)),
+    portraitId: choose(AVATAR_PRESETS).id
+  };
 }
