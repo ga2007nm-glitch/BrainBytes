@@ -1,5 +1,7 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3001")
-  .replace(/\/+$/, "");
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL
+  || (import.meta.env.DEV ? "http://localhost:3001" : "")
+).replace(/\/+$/, "");
 const SESSION_KEY = "brainbytes.practice.session.v1";
 
 class BackendError extends Error {
@@ -11,6 +13,10 @@ class BackendError extends Error {
 }
 
 async function requestJson(path, options = {}) {
+  if (!API_BASE_URL) {
+    throw new Error("Set VITE_API_BASE_URL to the deployed BrainBytes backend URL.");
+  }
+
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, options);

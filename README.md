@@ -38,6 +38,16 @@ npm run dev
 
 Open `http://localhost:5173`. To demonstrate an invite match, use two browsers/devices pointed at the same running frontend and backend, create an invite in one, then join with its code in the other.
 
+## Deploy the prototype
+
+The frontend is configured for Vercel, and `render.yaml` describes the long-running Node backend for Render. The backend must not be deployed as stateless Vercel functions: its matchmaking and session state lives in process memory.
+
+1. Deploy the `backend` service from this repository on Render using the included Blueprint. Set `FRONTEND_ORIGIN` to the Vercel frontend's production origin (for example, `https://your-project.vercel.app`).
+2. Create a Vercel project for this repository and set its Root Directory to `frontend`. Use the Vite preset and set `VITE_API_BASE_URL` to the Render service URL (for example, `https://brainbytes-api.onrender.com`).
+3. Redeploy both services after setting their URLs, then verify the frontend and backend health endpoint. The Vercel rewrite supports React Router paths such as `/battle` and `/teacher`.
+
+The included Render service uses the free plan, which can sleep when idle and cold-start slowly. In-memory sessions, matches, and analytics are also lost when the service restarts; use persistent storage and a non-sleeping backend plan before relying on it for a live classroom event.
+
 ## Suggested judging demonstration
 
 1. Select a grade and explain that each round uses a curated question with a worked explanation.
