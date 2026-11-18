@@ -1,0 +1,31 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="leo-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#1E3A8A" />
+      <stop offset="100%" stopColor="#0B132B" />
+    </radialGradient>
+    <linearGradient id="leo-visor" x1="0" y1="0" x2="100" y2="0">
+      <stop offset="0%" stopColor="#EF4444" />
+      <stop offset="100%" stopColor="#F59E0B" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#leo-bg)"/>
+  <!-- Circuit traces -->
+  <path d="M30 60 L60 60 L80 40" stroke="#3B82F6" stroke-width="2" fill="none" opacity="0.4"/>
+  <circle cx="80" cy="40" r="3" fill="#3B82F6"/>
+  <path d="M170 140 L140 140 L120 160" stroke="#EF4444" stroke-width="2" fill="none" opacity="0.4"/>
+  <circle cx="120" cy="160" r="3" fill="#EF4444"/>
+  <!-- Cyber Armor Collar -->
+  <path d="M40 200 L160 200 L145 158 C130 142, 70 142, 55 158 Z" fill="#1E293B" stroke="#3B82F6" stroke-width="2"/>
+  <path d="M78 160 L100 185 L122 160 Z" fill="#EF4444" opacity="0.8"/>
+  <!-- Neck & Face -->
+  <path d="M88 135 L112 135 L110 155 L90 155 Z" fill="#C5885C"/>
+  <path d="M68 95 C68 135, 132 135, 132 95 C132 65, 68 65, 68 95 Z" fill="#E4A87C"/>
+  <!-- Sleek Hair with Cyber Streak -->
+  <path d="M64 85 C62 50, 80 42, 100 42 C122 42, 138 52, 136 85 C124 68, 76 68, 64 85 Z" fill="#0F172A"/>
+  <path d="M85 45 C95 45, 110 52, 105 68 C98 68, 90 62, 85 45 Z" fill="#EF4444"/>
+  <!-- Eye Visor -->
+  <rect x="72" y="90" width="56" height="15" rx="4" fill="url(#leo-visor)" stroke="#FFF" stroke-width="1"/>
+  <!-- Confident Smile -->
+  <path d="M92 118 Q100 125 108 118" stroke="#372020" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

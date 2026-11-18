@@ -1,0 +1,35 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="lyra-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#9D4EDD" />
+      <stop offset="100%" stopColor="#1B1238" />
+    </radialGradient>
+    <linearGradient id="lyra-hair" x1="0" y1="0" x2="200" y2="200">
+      <stop offset="0%" stopColor="#FF007A" />
+      <stop offset="100%" stopColor="#7928CA" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#lyra-bg)"/>
+  <!-- Cyber aura -->
+  <circle cx="100" cy="95" r="75" stroke="#9D4EDD" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>
+  <!-- Hair back -->
+  <path d="M50 100 C40 160, 60 180, 75 190 L125 190 C140 180, 160 160, 150 100 Z" fill="url(#lyra-hair)"/>
+  <!-- Shoulders / Cyber Jacket -->
+  <path d="M40 200 L160 200 L150 165 C130 150, 70 150, 50 165 Z" fill="#251C48" stroke="#00F2FE" stroke-width="2"/>
+  <path d="M75 155 L100 180 L125 155 Z" fill="#00F2FE" opacity="0.8"/>
+  <!-- Neck & Face -->
+  <path d="M88 135 L112 135 L110 155 L90 155 Z" fill="#FAD4C0"/>
+  <path d="M68 95 C68 135, 132 135, 132 95 C132 65, 68 65, 68 95 Z" fill="#FFE5D9"/>
+  <!-- Hair front -->
+  <path d="M65 85 C65 50, 135 50, 135 85 C120 70, 80 70, 65 85 Z" fill="url(#lyra-hair)"/>
+  <path d="M65 85 C60 120, 75 135, 75 135 C70 110, 75 95, 80 85 Z" fill="url(#lyra-hair)"/>
+  <path d="M135 85 C140 120, 125 135, 125 135 C130 110, 125 95, 120 85 Z" fill="url(#lyra-hair)"/>
+  <!-- Cyber Glasses / Visor -->
+  <rect x="74" y="92" width="52" height="16" rx="4" fill="rgba(0, 242, 254, 0.3)" stroke="#00F2FE" stroke-width="2"/>
+  <line x1="100" y1="92" x2="100" y2="108" stroke="#00F2FE" stroke-width="1.5"/>
+  <!-- Blush -->
+  <circle cx="78" cy="115" r="5" fill="#FF5E7E" opacity="0.4"/>
+  <circle cx="122" cy="115" r="5" fill="#FF5E7E" opacity="0.4"/>
+  <!-- Smile -->
+  <path d="M94 122 Q100 126 106 122" stroke="#4A2828" stroke-width="2" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,33 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="maya-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#2A1B4E" />
+      <stop offset="100%" stopColor="#0B091A" />
+    </radialGradient>
+    <linearGradient id="maya-hair" x1="0" y1="0" x2="200" y2="200">
+      <stop offset="0%" stopColor="#F59E0B" />
+      <stop offset="100%" stopColor="#D97706" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#maya-bg)"/>
+  <!-- Orbit Ring -->
+  <ellipse cx="100" cy="100" rx="72" ry="24" stroke="#F59E0B" stroke-width="2" stroke-dasharray="6 4" transform="rotate(-20 100 100)" opacity="0.6"/>
+  <!-- Space Suit Collar -->
+  <path d="M40 200 L160 200 L145 160 C130 145, 70 145, 55 160 Z" fill="#1E1B4B" stroke="#F59E0B" stroke-width="2"/>
+  <circle cx="100" cy="175" r="8" fill="#F59E0B"/>
+  <!-- Neck & Face -->
+  <path d="M88 135 L112 135 L110 155 L90 155 Z" fill="#D99B69"/>
+  <path d="M68 95 C68 135, 132 135, 132 95 C132 65, 68 65, 68 95 Z" fill="#F3C69D"/>
+  <!-- Hair: High Ponytail / Space Bun -->
+  <circle cx="100" cy="46" r="22" fill="url(#maya-hair)"/>
+  <path d="M66 85 C64 55, 136 55, 134 85 C122 72, 78 72, 66 85 Z" fill="url(#maya-hair)"/>
+  <!-- Star Earring -->
+  <polygon points="62,106 64,111 69,111 65,114 67,119 62,116 57,119 59,114 55,111 60,111" fill="#F59E0B"/>
+  <!-- Eyes -->
+  <circle cx="84" cy="98" r="4.5" fill="#7C3AED"/>
+  <circle cx="116" cy="98" r="4.5" fill="#7C3AED"/>
+  <circle cx="86" cy="96" r="1.5" fill="#FFF"/>
+  <circle cx="118" cy="96" r="1.5" fill="#FFF"/>
+  <!-- Smile -->
+  <path d="M93 118 Q100 124 107 118" stroke="#4A2828" stroke-width="2" stroke-linecap="round"/>
+</svg>

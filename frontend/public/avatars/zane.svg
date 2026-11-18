@@ -1,0 +1,31 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="zane-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#0F3443" />
+      <stop offset="100%" stopColor="#0B132B" />
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#zane-bg)"/>
+  <!-- Matrix grid line -->
+  <circle cx="100" cy="100" r="70" stroke="#00F2FE" stroke-width="1.5" stroke-dasharray="8 6" opacity="0.4"/>
+  <!-- Hood / Collar -->
+  <path d="M40 200 L160 200 L145 160 C130 145, 70 145, 55 160 Z" fill="#1C2541" stroke="#34D399" stroke-width="2"/>
+  <path d="M85 155 L100 185 L115 155 Z" fill="#34D399" opacity="0.7"/>
+  <!-- Neck & Face -->
+  <path d="M88 135 L112 135 L110 155 L90 155 Z" fill="#E0A97C"/>
+  <path d="M68 95 C68 135, 132 135, 132 95 C132 65, 68 65, 68 95 Z" fill="#F8D7BE"/>
+  <!-- Short Spiky Dark Hair -->
+  <path d="M62 85 C60 50, 80 40, 100 40 C120 40, 140 50, 138 85 C130 70, 120 75, 110 65 C100 75, 90 65, 80 75 C72 70, 65 78, 62 85 Z" fill="#1E293B"/>
+  <!-- Cyber Headset -->
+  <path d="M56 85 C56 50, 144 50, 144 85" stroke="#34D399" stroke-width="6" stroke-linecap="round"/>
+  <rect x="52" y="80" width="12" height="26" rx="5" fill="#34D399" stroke="#FFF" stroke-width="1.5"/>
+  <rect x="136" y="80" width="12" height="26" rx="5" fill="#34D399" stroke="#FFF" stroke-width="1.5"/>
+  <!-- Eyes -->
+  <circle cx="84" cy="98" r="4" fill="#00F2FE"/>
+  <circle cx="116" cy="98" r="4" fill="#00F2FE"/>
+  <!-- Eyebrows -->
+  <path d="M78 91 L90 92" stroke="#1E293B" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M122 91 L110 92" stroke="#1E293B" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Smirk -->
+  <path d="M94 118 Q102 124 108 116" stroke="#4A2828" stroke-width="2" stroke-linecap="round"/>
+</svg>
